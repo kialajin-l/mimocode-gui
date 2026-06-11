@@ -1,13 +1,17 @@
+import { useState } from 'react'
 import { useSession } from '../../hooks/useSession'
 import { SessionItem } from './SessionItem'
 
 export function SessionList() {
-  const { sessions, activeSessionId, setActiveSession, deleteSession, startSession } = useSession()
+  const { sessions, activeSessionId, createSession, deleteSession, setActiveSession } = useSession()
+  const [showInput, setShowInput] = useState(false)
+  const [newName, setNewName] = useState('')
 
   const handleCreate = () => {
-    const name = prompt('Session name:')
-    if (name) {
-      startSession(name, window.electronAPI ? '.' : process.cwd())
+    if (newName.trim()) {
+      createSession(newName.trim(), window.electronAPI ? '.' : process.cwd())
+      setNewName('')
+      setShowInput(false)
     }
   }
 
@@ -15,10 +19,22 @@ export function SessionList() {
     <div className="session-list">
       <div className="session-list-header">
         <h3>Sessions</h3>
-        <button onClick={handleCreate} className="session-list-add">
+        <button onClick={() => setShowInput(!showInput)} className="session-list-add">
           +
         </button>
       </div>
+      {showInput && (
+        <div className="session-input-row">
+          <input
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            placeholder="Session name..."
+            onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+            autoFocus
+          />
+          <button onClick={handleCreate} disabled={!newName.trim()}>OK</button>
+        </div>
+      )}
       <div className="session-list-items">
         {sessions.map((session) => (
           <SessionItem

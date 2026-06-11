@@ -1,30 +1,33 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
+const chunkListeners = new Map<string, (...args: any[]) => void>()
+
 contextBridge.exposeInMainWorld('electronAPI', {
-  startSession: (sessionId: string, cwd: string) =>
-    ipcRenderer.invoke('start-session', sessionId, cwd),
-
-  sendMessage: (sessionId: string, message: string) =>
-    ipcRenderer.invoke('send-message', sessionId, message),
-
-  stopSession: (sessionId: string) =>
-    ipcRenderer.invoke('stop-session', sessionId),
-
-  onSessionOutput: (callback: (sessionId: string, data: string) => void) => {
-    ipcRenderer.on('session-output', (_, sessionId, data) => callback(sessionId, data))
+  sendMessage: (sessionId: string, message: string, cwd?: string) => 
+    ipcRenderer.invoke('send-message', sessionId, message, cwd),
+  
+  cancelMessage: (sessionId: string) => 
+    ipcRenderer.invoke('cancel-message', sessionId),
+  
+  onMessageChunk: (sessionId: string, callback: (chunk: any) => void) => {
+    const existing = chunkListeners.get(sessionId)
+    if (existing) {
+      ipcRenderer.removeListener('message-chunk', existing)
+    }
+    const listener = (_: any, sid: string, chunk: any) => {
+      if (sid === sessionId) callback(chunk)
+    }
+    chunkListeners.set(sessionId, listener)
+    ipcRenderer.on('message-chunk', listener)
   },
-
-  onSessionError: (callback: (sessionId: string, data: string) => void) => {
-    ipcRenderer.on('session-error', (_, sessionId, data) => callback(sessionId, data))
+  
+  removeMessageChunkListener: (sessionId: string) => {
+    const listener = chunkListeners.get(sessionId)
+    if (listener) {
+      ipcRenderer.removeListener('message-chunk', listener)
+      chunkListeners.delete(sessionId)
+    }
   },
-
-  onSessionExit: (callback: (sessionId: string, code: number | null) => void) => {
-    ipcRenderer.on('session-exit', (_, sessionId, code) => callback(sessionId, code))
-  },
-
-  removeSessionListeners: () => {
-    ipcRenderer.removeAllListeners('session-output')
-    ipcRenderer.removeAllListeners('session-error')
-    ipcRenderer.removeAllListeners('session-exit')
-  }
+  
+  getMimoPath: () => ipcRenderer.invoke('get-mimo-path')
 })

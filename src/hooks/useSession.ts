@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useCallback, useRef } from 'react'
 import { useSessionStore } from '../stores/sessionStore'
 import { Message } from '../types/session'
 
@@ -14,43 +14,12 @@ export function useSession() {
   } = useSessionStore()
 
   const activeSession = sessions.find((s) => s.id === activeSessionId)
+  const activeSessionIdRef = useRef(activeSessionId)
+  activeSessionIdRef.current = activeSessionId
 
-  useEffect(() => {
-    const api = window.electronAPI
-    if (!api) return
-
-    api.onSessionOutput((sessionId, data) => {
-      const assistantMessage: Message = {
-        id: crypto.randomUUID(),
-        role: 'assistant',
-        content: data,
-        timestamp: new Date()
-      }
-      addMessage(sessionId, assistantMessage)
-    })
-
-    api.onSessionError((sessionId, data) => {
-      updateSession(sessionId, { status: 'error' })
-      const errorMessage: Message = {
-        id: crypto.randomUUID(),
-        role: 'system',
-        content: `Error: ${data}`,
-        timestamp: new Date()
-      }
-      addMessage(sessionId, errorMessage)
-    })
-
-    api.onSessionExit((sessionId, code) => {
-      updateSession(sessionId, { status: code === 0 ? 'idle' : 'error', pid: null })
-    })
-
-    return () => {
-      api.removeSessionListeners()
-    }
-  }, [addMessage, updateSession])
-
-  const sendMessage = async (content: string) => {
-    if (!activeSession) return
+  const sendMessage = useCallback(async (content: string) => {
+    const sessionId = activeSessionIdRef.current
+    if (!sessionId) return
 
     const userMessage: Message = {
       id: crypto.randomUUID(),
@@ -59,46 +28,109 @@ export function useSession() {
       timestamp: new Date()
     }
 
-    addMessage(activeSession.id, userMessage)
+    addMessage(sessionId, userMessage)
+    updateSession(sessionId, { status: 'running' })
 
     const api = window.electronAPI
     if (api) {
-      await api.sendMessage(activeSession.id, content)
+      let streamContent = ''
+      
+      const handleChunk = (chunk: any) => {
+        if (chunk.type === 'text') {
+          streamContent += chunk.content
+          
+          const store = useSessionStore.getState()
+          const session = store.sessions.find(s => s.id === sessionId)
+          if (session) {
+            const streamMsgId = 'stream-' + sessionId
+            const existingStreamIdx = session.messages.findIndex(m => m.id === streamMsgId)
+            
+            if (existingStreamIdx >= 0) {
+              const updatedMessages = [...session.messages]
+              updatedMessages[existingStreamIdx] = {
+                ...updatedMessages[existingStreamIdx],
+                content: streamContent
+              }
+              updateSession(sessionId, { messages: updatedMessages })
+            } else {
+              addMessage(sessionId, {
+                id: streamMsgId,
+                role: 'assistant',
+                content: streamContent,
+                timestamp: new Date()
+              })
+            }
+          }
+        } else if (chunk.type === 'metadata') {
+          console.log('[metadata]', chunk.content)
+        }
+      }
+
+      api.onMessageChunk(sessionId, handleChunk)
+
+      const result = await api.sendMessage(sessionId, content, process.cwd())
+      
+      api.removeMessageChunkListener(sessionId)
+      
+      if (result.success && result.content) {
+        const store = useSessionStore.getState()
+        const session = store.sessions.find(s => s.id === sessionId)
+        
+        if (session) {
+          const finalMessages = session.messages.filter(m => !m.id.startsWith('stream-'))
+          const assistantMessage: Message = {
+            id: crypto.randomUUID(),
+            role: 'assistant',
+            content: result.content,
+            timestamp: new Date()
+          }
+          updateSession(sessionId, { 
+            messages: [...finalMessages, assistantMessage],
+            status: 'idle'
+          })
+        }
+      } else {
+        updateSession(sessionId, { status: 'error' })
+        const errorMessage: Message = {
+          id: crypto.randomUUID(),
+          role: 'system',
+          content: `Error: ${result.error || 'Unknown error'}`,
+          timestamp: new Date()
+        }
+        addMessage(sessionId, errorMessage)
+      }
     } else {
       const assistantMessage: Message = {
         id: crypto.randomUUID(),
         role: 'assistant',
-        content: `Echo: ${content}`,
+        content: `[Browser Mode] Echo: ${content}`,
         timestamp: new Date()
       }
       setTimeout(() => {
-        addMessage(activeSession.id, assistantMessage)
+        addMessage(sessionId, assistantMessage)
       }, 500)
     }
-  }
+  }, [addMessage, updateSession])
 
-  const startSession = async (name: string, cwd: string) => {
-    const session = createSession(name, cwd)
-
+  const cancelMessage = useCallback(async () => {
+    const sessionId = activeSessionIdRef.current
+    if (!sessionId) return
     const api = window.electronAPI
     if (api) {
-      updateSession(session.id, { status: 'running' })
-      const result = await api.startSession(session.id, cwd)
-      if (result.pid) {
-        updateSession(session.id, { pid: result.pid })
-      }
+      api.removeMessageChunkListener(sessionId)
+      await api.cancelMessage(sessionId)
+      updateSession(sessionId, { status: 'idle' })
     }
-
-    return session
-  }
+  }, [updateSession])
 
   return {
     sessions,
     activeSession,
     activeSessionId,
-    startSession,
+    createSession,
     deleteSession,
     setActiveSession,
-    sendMessage
+    sendMessage,
+    cancelMessage
   }
 }

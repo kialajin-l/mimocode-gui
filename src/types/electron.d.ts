@@ -1,11 +1,20 @@
+interface MessageChunk {
+  type: 'text' | 'tool_use' | 'tool_result' | 'thinking' | 'error' | 'metadata'
+  content: string
+  toolName?: string
+  toolArgs?: Record<string, unknown>
+}
+
 interface ElectronAPI {
-  startSession: (sessionId: string, cwd: string) => Promise<{ success: boolean; pid?: number }>
-  sendMessage: (sessionId: string, message: string) => Promise<{ success: boolean }>
-  stopSession: (sessionId: string) => Promise<{ success: boolean }>
-  onSessionOutput: (callback: (sessionId: string, data: string) => void) => void
-  onSessionError: (callback: (sessionId: string, data: string) => void) => void
-  onSessionExit: (callback: (sessionId: string, code: number | null) => void) => void
-  removeSessionListeners: () => void
+  sendMessage: (sessionId: string, message: string, cwd?: string) => Promise<{ 
+    success: boolean; 
+    content?: string; 
+    error?: string 
+  }>
+  cancelMessage: (sessionId: string) => Promise<boolean>
+  onMessageChunk: (sessionId: string, callback: (chunk: MessageChunk) => void) => void
+  removeMessageChunkListener: (sessionId: string) => void
+  getMimoPath: () => Promise<string>
 }
 
 declare global {

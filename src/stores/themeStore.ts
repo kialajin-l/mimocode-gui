@@ -7,6 +7,9 @@ interface ThemeState {
   setTheme: (theme: Theme) => void
 }
 
+// Apply theme immediately on module load
+document.documentElement.setAttribute('data-theme', 'dark')
+
 export const useThemeStore = create<ThemeState>((set) => ({
   theme: 'dark',
   setTheme: (theme) => {

@@ -8,7 +8,7 @@ import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import './App.css'
 
 function App() {
-  const { activeSession, sendMessage } = useSession()
+  const { activeSession, sendMessage, cancelMessage } = useSession()
   useKeyboardShortcuts()
   
   return (
@@ -24,7 +24,11 @@ function App() {
             {activeSession ? (
               <>
                 <MessageList messages={activeSession.messages} />
-                <MessageInput onSend={sendMessage} />
+                <MessageInput 
+                  onSend={sendMessage} 
+                  onCancel={activeSession.status === 'running' ? cancelMessage : undefined}
+                  isRunning={activeSession.status === 'running'}
+                />
               </>
             ) : (
               <div className="app-empty">

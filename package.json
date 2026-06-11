@@ -7,11 +7,12 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "build:electron": "tsc -p tsconfig.electron.json",
-    "electron:dev": "tsc -p tsconfig.electron.json && vite build && electron .",
+    "electron:dev": "tsc -p tsconfig.electron.json && vite build && npx electron .",
     "electron:build": "tsc -p tsconfig.electron.json && vite build && electron-builder",
     "package": "electron-builder"
   },
   "dependencies": {
+    "node-pty": "^1.1.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "zustand": "^4.5.4"

@@ -2,14 +2,16 @@ import { useState, KeyboardEvent } from 'react'
 
 interface MessageInputProps {
   onSend: (message: string) => void
+  onCancel?: () => void
   disabled?: boolean
+  isRunning?: boolean
 }
 
-export function MessageInput({ onSend, disabled }: MessageInputProps) {
+export function MessageInput({ onSend, onCancel, disabled, isRunning }: MessageInputProps) {
   const [input, setInput] = useState('')
 
   const handleSend = () => {
-    if (input.trim() && !disabled) {
+    if (input.trim() && !disabled && !isRunning) {
       onSend(input.trim())
       setInput('')
     }
@@ -28,13 +30,19 @@ export function MessageInput({ onSend, disabled }: MessageInputProps) {
         value={input}
         onChange={(e) => setInput(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder="Type a message..."
-        disabled={disabled}
+        placeholder={isRunning ? "AI is thinking..." : "Type a message..."}
+        disabled={disabled || isRunning}
         rows={1}
       />
-      <button onClick={handleSend} disabled={disabled || !input.trim()}>
-        Send
-      </button>
+      {isRunning && onCancel ? (
+        <button onClick={onCancel} className="cancel-button">
+          Cancel
+        </button>
+      ) : (
+        <button onClick={handleSend} disabled={disabled || !input.trim() || isRunning}>
+          Send
+        </button>
+      )}
     </div>
   )
 }

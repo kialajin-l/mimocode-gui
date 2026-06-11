@@ -1,10 +1,11 @@
 import { app, BrowserWindow, ipcMain } from 'electron'
 import path from 'path'
-import { startCliSession, sendCliMessage, stopCliSession } from './cli-bridge'
+import fs from 'fs'
+import { sendMessage, cancelMessage, getMimoPath, stopAllProcesses } from './cli-bridge'
 
 let mainWindow: BrowserWindow | null = null
 
-function createWindow() {
+async function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -15,11 +16,11 @@ function createWindow() {
     }
   })
 
-  if (process.env.NODE_ENV === 'development') {
-    mainWindow.loadURL('http://localhost:5173')
-    mainWindow.webContents.openDevTools()
+  const distPath = path.join(__dirname, '..', 'dist', 'index.html')
+  if (fs.existsSync(distPath)) {
+    mainWindow.loadFile(distPath)
   } else {
-    mainWindow.loadFile(path.join(__dirname, '../dist/index.html'))
+    mainWindow.loadURL('http://localhost:5173')
   }
 
   mainWindow.on('closed', () => {
@@ -27,37 +28,40 @@ function createWindow() {
   })
 }
 
-ipcMain.handle('start-session', (_, sessionId: string, cwd: string) => {
-  const proc = startCliSession(sessionId, cwd)
-
-  proc.stdout?.on('data', (data: Buffer) => {
-    mainWindow?.webContents.send('session-output', sessionId, data.toString())
+// IPC handlers
+ipcMain.handle('send-message', async (_, sessionId: string, message: string, cwd?: string) => {
+  return new Promise((resolve) => {
+    sendMessage(message, {
+      sessionId,
+      cwd,
+      onChunk: (chunk) => {
+        mainWindow?.webContents.send('message-chunk', sessionId, chunk)
+      },
+      onComplete: (text) => {
+        resolve({ success: true, content: text })
+      },
+      onError: (error) => {
+        resolve({ success: false, error })
+      }
+    })
   })
-
-  proc.stderr?.on('data', (data: Buffer) => {
-    mainWindow?.webContents.send('session-error', sessionId, data.toString())
-  })
-
-  proc.on('exit', (code) => {
-    mainWindow?.webContents.send('session-exit', sessionId, code)
-  })
-
-  return { success: true, pid: proc.pid }
 })
 
-ipcMain.handle('send-message', (_, sessionId: string, message: string) => {
-  sendCliMessage(sessionId, message)
-  return { success: true }
+ipcMain.handle('cancel-message', (_, sessionId: string) => {
+  return cancelMessage(sessionId)
 })
 
-ipcMain.handle('stop-session', (_, sessionId: string) => {
-  stopCliSession(sessionId)
-  return { success: true }
+ipcMain.handle('get-mimo-path', () => getMimoPath())
+
+// Cleanup on exit
+app.on('before-quit', () => {
+  stopAllProcesses()
 })
 
 app.whenReady().then(createWindow)
 
 app.on('window-all-closed', () => {
+  stopAllProcesses()
   if (process.platform !== 'darwin') {
     app.quit()
   }
