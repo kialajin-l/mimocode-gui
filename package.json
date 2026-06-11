@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "electron:dev": "vite build && electron .",
+    "build:electron": "tsc -p tsconfig.electron.json",
+    "electron:dev": "tsc -p tsconfig.electron.json && vite build && electron .",
+    "electron:build": "tsc -p tsconfig.electron.json && vite build && electron-builder",
     "package": "electron-builder"
   },
   "dependencies": {
