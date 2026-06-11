@@ -1,9 +1,10 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { ThemeSwitcher } from './components/Settings/ThemeSwitcher'
 import { SessionList } from './components/Sidebar/SessionList'
 import { MessageList } from './components/Chat/MessageList'
 import { MessageInput } from './components/Chat/MessageInput'
+import { RightPanel } from './components/Panel/RightPanel'
 import { useSession } from './hooks/useSession'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { useSessionStore } from './stores/sessionStore'
@@ -12,6 +13,7 @@ import './App.css'
 function App() {
   const { activeSession, sendMessage, cancelMessage } = useSession()
   const loadData = useSessionStore(s => s.loadData)
+  const [panelOpen, setPanelOpen] = useState(false)
   useKeyboardShortcuts()
 
   useEffect(() => {
@@ -21,7 +23,6 @@ function App() {
   return (
     <ErrorBoundary>
       <div className="app">
-        {/* macOS-style title bar */}
         <div className="title-bar">
           <div className="title-bar-left">
             <span>快速对话</span>
@@ -34,7 +35,6 @@ function App() {
         </div>
 
         <div className="app-body">
-          {/* Left sidebar */}
           <aside className="sidebar">
             <div className="sidebar-nav-row">
               <button className="nav-btn" title="返回">
@@ -81,7 +81,6 @@ function App() {
             </div>
           </aside>
 
-          {/* Main content */}
           <main className="main-content">
             <header className="top-bar">
               <div className="top-bar-left">
@@ -90,6 +89,13 @@ function App() {
                 </span>
               </div>
               <div className="top-bar-right">
+                <button
+                  className={`top-btn ${panelOpen ? 'active' : ''}`}
+                  onClick={() => setPanelOpen(!panelOpen)}
+                  title="切换面板"
+                >
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+                </button>
                 <ThemeSwitcher />
               </div>
             </header>
@@ -118,6 +124,8 @@ function App() {
               </div>
             </div>
           </main>
+
+          <RightPanel open={panelOpen} onToggle={() => setPanelOpen(!panelOpen)} />
         </div>
       </div>
     </ErrorBoundary>
