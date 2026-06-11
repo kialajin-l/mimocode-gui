@@ -726,6 +726,33 @@ html, body {
   color: var(--text-secondary);
 }
 
+.permission-select,
+.model-select {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border: 1px solid var(--border-color);
+  background: var(--bg-tertiary);
+  font-family: inherit;
+  transition: all var(--transition-speed);
+  appearance: none;
+}
+
+.permission-select:hover,
+.model-select:hover {
+  border-color: var(--text-tertiary);
+}
+
+.model-select {
+  padding-right: 22px;
+  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23888' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 7px center;
+}
+
 .send-btn {
   width: 32px;
   height: 32px;
@@ -777,4 +804,117 @@ html, body {
 
 .cancel-button:hover {
   background: #dc2626;
+}
+
+/* Markdown content */
+.message-text p {
+  margin-bottom: 8px;
+}
+
+.message-text p:last-child {
+  margin-bottom: 0;
+}
+
+.message-text strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.message-text em {
+  color: var(--text-secondary);
+}
+
+.message-text code {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 0.875em;
+  color: #e879f9;
+}
+
+.message-text pre {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  margin: 10px 0;
+  overflow: hidden;
+}
+
+.message-text pre code {
+  display: block;
+  padding: 14px;
+  background: none;
+  border: none;
+  border-radius: 0;
+  color: var(--text-secondary);
+  font-size: 12.5px;
+  line-height: 1.6;
+  overflow-x: auto;
+}
+
+.message-text ul,
+.message-text ol {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+
+.message-text li {
+  margin-bottom: 4px;
+  line-height: 1.6;
+}
+
+.message-text blockquote {
+  border-left: 3px solid var(--accent-color);
+  padding-left: 12px;
+  margin: 8px 0;
+  color: var(--text-secondary);
+}
+
+.message-text a {
+  color: var(--accent-color);
+  text-decoration: none;
+}
+
+.message-text a:hover {
+  text-decoration: underline;
+}
+
+.message-text h1,
+.message-text h2,
+.message-text h3,
+.message-text h4 {
+  margin: 12px 0 6px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.message-text h1 { font-size: 1.2em; }
+.message-text h2 { font-size: 1.1em; }
+.message-text h3 { font-size: 1em; }
+
+.message-text table {
+  border-collapse: collapse;
+  margin: 8px 0;
+  width: 100%;
+}
+
+.message-text th,
+.message-text td {
+  border: 1px solid var(--border-color);
+  padding: 6px 10px;
+  text-align: left;
+  font-size: 0.9em;
+}
+
+.message-text th {
+  background: var(--bg-tertiary);
+  font-weight: 600;
+}
+
+.message-text hr {
+  border: none;
+  border-top: 1px solid var(--border-color);
+  margin: 12px 0;
 }

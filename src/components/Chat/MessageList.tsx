@@ -1,3 +1,5 @@
+import Markdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { Message } from '../../types/session'
 
 interface MessageListProps {
@@ -21,7 +23,11 @@ export function MessageList({ messages }: MessageListProps) {
                 {message.timestamp.toLocaleTimeString()}
               </span>
             </div>
-            <div className="message-text">{message.content}</div>
+            <div className="message-text">
+              <Markdown remarkPlugins={[remarkGfm]}>
+                {message.content}
+              </Markdown>
+            </div>
           </div>
         </div>
       ))}
