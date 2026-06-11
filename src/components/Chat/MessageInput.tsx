@@ -17,7 +17,7 @@ export function MessageInput({ onSend, onCancel, disabled, isRunning }: MessageI
     }
   }
 
-  const handleKeyDown = (e: KeyboardEvent) => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSend()
@@ -30,19 +30,23 @@ export function MessageInput({ onSend, onCancel, disabled, isRunning }: MessageI
         value={input}
         onChange={(e) => setInput(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder={isRunning ? "AI is thinking..." : "Type a message..."}
+        placeholder={isRunning ? "AI is thinking..." : "描述你的需求..."}
         disabled={disabled || isRunning}
         rows={1}
+        style={{ minHeight: 22 }}
       />
-      {isRunning && onCancel ? (
-        <button onClick={onCancel} className="cancel-button">
-          Cancel
-        </button>
-      ) : (
-        <button onClick={handleSend} disabled={disabled || !input.trim() || isRunning}>
-          Send
-        </button>
-      )}
+      <div className="input-toolbar">
+        <div className="input-toolbar-left" />
+        <div className="input-toolbar-right">
+          {isRunning && onCancel ? (
+            <button onClick={onCancel} className="cancel-button">取消</button>
+          ) : (
+            <button onClick={handleSend} disabled={disabled || !input.trim() || isRunning} className="send-btn">
+              发送
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   )
 }

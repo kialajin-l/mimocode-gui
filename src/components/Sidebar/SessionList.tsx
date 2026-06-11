@@ -1,51 +1,94 @@
 import { useState } from 'react'
 import { useSession } from '../../hooks/useSession'
-import { SessionItem } from './SessionItem'
+import { ProjectNode } from './ProjectNode'
 
 export function SessionList() {
-  const { sessions, activeSessionId, createSession, deleteSession, setActiveSession } = useSession()
-  const [showInput, setShowInput] = useState(false)
-  const [newName, setNewName] = useState('')
+  const {
+    sessions, projects, activeSessionId, createSession, deleteSession,
+    setActiveSession, createProject
+  } = useSession()
+  const [showNewProject, setShowNewProject] = useState(false)
+  const [newProjectName, setNewProjectName] = useState('')
+  const [expandedProjectIds, setExpandedProjectIds] = useState<string[]>([])
 
-  const handleCreate = () => {
-    if (newName.trim()) {
-      createSession(newName.trim(), window.electronAPI ? '.' : process.cwd())
-      setNewName('')
-      setShowInput(false)
+  const toggleProject = (id: string) => {
+    setExpandedProjectIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    )
+  }
+
+  const handleCreateProject = () => {
+    if (newProjectName.trim()) {
+      createProject(newProjectName.trim())
+      setNewProjectName('')
+      setShowNewProject(false)
     }
   }
+
+  const handleNewSessionInProject = (projectId: string) => {
+    const name = `Session ${sessions.length + 1}`
+    createSession(name, '.', projectId)
+    if (!expandedProjectIds.includes(projectId)) {
+      setExpandedProjectIds(prev => [...prev, projectId])
+    }
+  }
+
+  const ungroupedSessions = sessions.filter(s => !s.projectId)
 
   return (
     <div className="session-list">
       <div className="session-list-header">
         <h3>Sessions</h3>
-        <button onClick={() => setShowInput(!showInput)} className="session-list-add">
-          +
-        </button>
+        <button onClick={() => setShowNewProject(!showNewProject)} className="session-list-add">+</button>
       </div>
-      {showInput && (
+
+      {showNewProject && (
         <div className="session-input-row">
           <input
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            placeholder="Session name..."
-            onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+            value={newProjectName}
+            onChange={e => setNewProjectName(e.target.value)}
+            placeholder="Project name..."
+            onKeyDown={e => e.key === 'Enter' && handleCreateProject()}
             autoFocus
           />
-          <button onClick={handleCreate} disabled={!newName.trim()}>OK</button>
+          <button onClick={handleCreateProject} disabled={!newProjectName.trim()}>OK</button>
         </div>
       )}
+
       <div className="session-list-items">
-        {sessions.map((session) => (
-          <SessionItem
-            key={session.id}
-            session={session}
-            isActive={session.id === activeSessionId}
-            onSelect={() => setActiveSession(session.id)}
-            onDelete={() => deleteSession(session.id)}
+        {projects.map(project => (
+          <ProjectNode
+            key={project.id}
+            project={project}
+            sessions={sessions.filter(s => s.projectId === project.id)}
+            activeSessionId={activeSessionId}
+            expanded={expandedProjectIds.includes(project.id)}
+            onToggle={() => toggleProject(project.id)}
+            onSelectSession={setActiveSession}
+            onDeleteSession={deleteSession}
+            onNewSession={handleNewSessionInProject}
           />
         ))}
+
+        {ungroupedSessions.length > 0 && (
+          <div className="session-list-ungrouped">
+            <div className="session-list-section-label">其他</div>
+            {ungroupedSessions.map(session => (
+              <div
+                key={session.id}
+                className={`session-item ${session.id === activeSessionId ? 'active' : ''}`}
+                onClick={() => setActiveSession(session.id)}
+              >
+                <span className="session-title">{session.name}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
+
+      <button className="new-project-btn" onClick={() => setShowNewProject(true)}>
+        + New project
+      </button>
     </div>
   )
 }

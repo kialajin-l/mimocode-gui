@@ -14,24 +14,36 @@ export class ErrorBoundary extends Component<Props, State> {
     super(props)
     this.state = { hasError: false }
   }
-  
+
   static getDerivedStateFromError(error: Error) {
     return { hasError: true, error }
   }
-  
+
+  componentDidCatch(error: Error, errorInfo: any) {
+    console.error('[ErrorBoundary]', error, errorInfo)
+  }
+
   render() {
     if (this.state.hasError) {
       return (
-        <div className="error-boundary">
+        <div style={{ padding: 40, color: '#fff', background: '#1a1a2a', minHeight: '100vh' }}>
           <h2>Something went wrong</h2>
-          <p>{this.state.error?.message}</p>
-          <button onClick={() => window.location.reload()}>
+          <pre style={{ whiteSpace: 'pre-wrap', marginTop: 16, color: '#ef4444' }}>
+            {this.state.error?.message}
+          </pre>
+          <pre style={{ whiteSpace: 'pre-wrap', marginTop: 8, color: '#888', fontSize: 12 }}>
+            {this.state.error?.stack}
+          </pre>
+          <button
+            onClick={() => window.location.reload()}
+            style={{ marginTop: 16, padding: '8px 16px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer' }}
+          >
             Reload
           </button>
         </div>
       )
     }
-    
+
     return this.props.children
   }
 }

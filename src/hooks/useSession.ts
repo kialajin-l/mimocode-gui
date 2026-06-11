@@ -3,15 +3,19 @@ import { useSessionStore } from '../stores/sessionStore'
 import { Message } from '../types/session'
 
 export function useSession() {
+  const store = useSessionStore()
   const {
     sessions,
     activeSessionId,
+    projects,
     createSession,
     deleteSession,
     setActiveSession,
     addMessage,
-    updateSession
-  } = useSessionStore()
+    updateSession,
+    createProject,
+    deleteProject
+  } = store
 
   const activeSession = sessions.find((s) => s.id === activeSessionId)
   const activeSessionIdRef = useRef(activeSessionId)
@@ -32,50 +36,51 @@ export function useSession() {
     updateSession(sessionId, { status: 'running' })
 
     const api = window.electronAPI
-    if (api) {
-      let streamContent = ''
-      
-      const handleChunk = (chunk: any) => {
-        if (chunk.type === 'text') {
-          streamContent += chunk.content
-          
-          const store = useSessionStore.getState()
-          const session = store.sessions.find(s => s.id === sessionId)
-          if (session) {
-            const streamMsgId = 'stream-' + sessionId
-            const existingStreamIdx = session.messages.findIndex(m => m.id === streamMsgId)
-            
-            if (existingStreamIdx >= 0) {
-              const updatedMessages = [...session.messages]
-              updatedMessages[existingStreamIdx] = {
-                ...updatedMessages[existingStreamIdx],
-                content: streamContent
-              }
-              updateSession(sessionId, { messages: updatedMessages })
-            } else {
-              addMessage(sessionId, {
-                id: streamMsgId,
-                role: 'assistant',
-                content: streamContent,
-                timestamp: new Date()
-              })
-            }
+    if (!api) {
+      const assistantMessage: Message = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: `[Browser Mode] Echo: ${content}`,
+        timestamp: new Date()
+      }
+      setTimeout(() => addMessage(sessionId, assistantMessage), 500)
+      return
+    }
+
+    let streamContent = ''
+
+    const handleChunk = (chunk: any) => {
+      if (chunk.type === 'text') {
+        streamContent += chunk.content
+        const storeState = useSessionStore.getState()
+        const session = storeState.sessions.find(s => s.id === sessionId)
+        if (session) {
+          const streamMsgId = 'stream-' + sessionId
+          const idx = session.messages.findIndex(m => m.id === streamMsgId)
+          if (idx >= 0) {
+            const msgs = [...session.messages]
+            msgs[idx] = { ...msgs[idx], content: streamContent }
+            updateSession(sessionId, { messages: msgs })
+          } else {
+            addMessage(sessionId, {
+              id: streamMsgId,
+              role: 'assistant',
+              content: streamContent,
+              timestamp: new Date()
+            })
           }
-        } else if (chunk.type === 'metadata') {
-          console.log('[metadata]', chunk.content)
         }
       }
+    }
 
+    try {
       api.onMessageChunk(sessionId, handleChunk)
-
-      const result = await api.sendMessage(sessionId, content, process.cwd())
-      
+      const result = await api.sendMessage(sessionId, content)
       api.removeMessageChunkListener(sessionId)
-      
-      if (result.success && result.content) {
-        const store = useSessionStore.getState()
-        const session = store.sessions.find(s => s.id === sessionId)
-        
+
+      if (result?.success && result.content) {
+        const storeState = useSessionStore.getState()
+        const session = storeState.sessions.find(s => s.id === sessionId)
         if (session) {
           const finalMessages = session.messages.filter(m => !m.id.startsWith('stream-'))
           const assistantMessage: Message = {
@@ -84,31 +89,18 @@ export function useSession() {
             content: result.content,
             timestamp: new Date()
           }
-          updateSession(sessionId, { 
+          updateSession(sessionId, {
             messages: [...finalMessages, assistantMessage],
             status: 'idle'
           })
         }
       } else {
-        updateSession(sessionId, { status: 'error' })
-        const errorMessage: Message = {
-          id: crypto.randomUUID(),
-          role: 'system',
-          content: `Error: ${result.error || 'Unknown error'}`,
-          timestamp: new Date()
-        }
-        addMessage(sessionId, errorMessage)
+        updateSession(sessionId, { status: 'idle' })
       }
-    } else {
-      const assistantMessage: Message = {
-        id: crypto.randomUUID(),
-        role: 'assistant',
-        content: `[Browser Mode] Echo: ${content}`,
-        timestamp: new Date()
-      }
-      setTimeout(() => {
-        addMessage(sessionId, assistantMessage)
-      }, 500)
+    } catch (err) {
+      console.error('[useSession] sendMessage error:', err)
+      api.removeMessageChunkListener(sessionId)
+      updateSession(sessionId, { status: 'idle' })
     }
   }, [addMessage, updateSession])
 
@@ -127,10 +119,13 @@ export function useSession() {
     sessions,
     activeSession,
     activeSessionId,
+    projects,
     createSession,
     deleteSession,
     setActiveSession,
     sendMessage,
-    cancelMessage
+    cancelMessage,
+    createProject,
+    deleteProject
   }
 }
