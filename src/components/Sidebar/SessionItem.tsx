@@ -13,21 +13,19 @@ export function SessionItem({ session, isActive, onSelect, onDelete }: SessionIt
       className={`session-item ${isActive ? 'active' : ''}`}
       onClick={onSelect}
     >
-      <div className="session-item-content">
-        <div className="session-item-name">{session.name}</div>
-        <div className="session-item-status">
-          <span className={`status-dot status-${session.status}`} />
-          {session.status}
-        </div>
-      </div>
+      <span className="session-title">{session.name}</span>
       <button
-        className="session-item-delete"
+        className="session-delete-btn"
         onClick={(e) => {
           e.stopPropagation()
           onDelete()
         }}
+        title="删除会话"
       >
-        ×
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
       </button>
     </div>
   )

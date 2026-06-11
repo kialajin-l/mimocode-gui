@@ -319,6 +319,31 @@ html, body {
   flex-shrink: 0;
 }
 
+.session-delete-btn {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  opacity: 0;
+  transition: opacity var(--transition-speed), background var(--transition-speed), color var(--transition-speed);
+  flex-shrink: 0;
+}
+
+.session-item:hover .session-delete-btn {
+  opacity: 1;
+}
+
+.session-delete-btn:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--error-color);
+}
+
 /* Session list (wrapper) */
 .session-list {
   display: flex;
