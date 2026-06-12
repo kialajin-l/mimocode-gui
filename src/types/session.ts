@@ -34,6 +34,7 @@ export interface Session {
   versions: SessionVersion[]
   projectId: string | null
   changes: FileChange[]
+  tags: string[]
   createdAt: Date
   updatedAt: Date
 }

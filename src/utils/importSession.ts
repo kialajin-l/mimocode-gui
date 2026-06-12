@@ -48,7 +48,8 @@ export function parseMarkdownToSession(content: string, filename: string): Omit<
     messages,
     versions: [],
     projectId: null,
-    changes: []
+    changes: [],
+    tags: []
   }
 }
 

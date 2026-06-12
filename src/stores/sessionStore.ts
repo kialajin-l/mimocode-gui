@@ -94,6 +94,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       versions: [],
       projectId: projectId || null,
       changes: [],
+      tags: [],
       createdAt: new Date(),
       updatedAt: new Date()
     }
