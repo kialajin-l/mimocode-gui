@@ -77,5 +77,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Data persistence
   getMimoPath: () => safeInvoke('get-mimo-path'),
   loadData: () => safeInvoke('load-data'),
-  saveData: (data: any) => safeInvoke('save-data', data)
+  saveData: (data: any) => safeInvoke('save-data', data),
+
+  // Git operations
+  gitDiff: (cwd?: string) => safeInvoke('git-diff', cwd),
+  gitDiffStat: (cwd?: string) => safeInvoke('git-diff-stat', cwd)
 })

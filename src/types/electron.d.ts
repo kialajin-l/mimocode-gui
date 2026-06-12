@@ -31,6 +31,10 @@ interface ElectronAPI {
   getMimoPath: () => Promise<string>
   loadData: () => Promise<any>
   saveData: (data: any) => Promise<boolean>
+
+  // Git
+  gitDiff: (cwd?: string) => Promise<{ success: boolean; diff: string; error?: string }>
+  gitDiffStat: (cwd?: string) => Promise<{ success: boolean; stat: string; error?: string }>
 }
 
 declare global {

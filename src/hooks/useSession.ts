@@ -1,6 +1,7 @@
 import { useCallback, useRef } from 'react'
 import { useSessionStore } from '../stores/sessionStore'
 import { Message } from '../types/session'
+import { parseDiff } from '../utils/diffParser'
 
 export function useSession() {
   const store = useSessionStore()
@@ -93,6 +94,19 @@ export function useSession() {
             messages: [...finalMessages, assistantMessage],
             status: 'idle'
           })
+
+          // Auto-detect file changes
+          try {
+            const diffResult = await api.gitDiff(session.cwd || '.')
+            if (diffResult?.success && diffResult.diff) {
+              const changes = parseDiff(diffResult.diff)
+              if (changes.length > 0) {
+                updateSession(sessionId, { changes })
+              }
+            }
+          } catch (e) {
+            console.error('[useSession] git diff error:', e)
+          }
         }
       } else {
         updateSession(sessionId, { status: 'idle' })

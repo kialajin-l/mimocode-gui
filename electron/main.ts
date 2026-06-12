@@ -170,6 +170,29 @@ ipcMain.handle('terminal-kill', (_, id: string) => {
   return false
 })
 
+// Git diff detection
+ipcMain.handle('git-diff', async (_, cwd?: string) => {
+  try {
+    const { execSync } = require('child_process')
+    const dir = cwd || process.cwd()
+    const diff = execSync('git diff', { cwd: dir, encoding: 'utf-8', timeout: 5000 })
+    return { success: true, diff }
+  } catch (err) {
+    return { success: false, diff: '', error: String(err) }
+  }
+})
+
+ipcMain.handle('git-diff-stat', async (_, cwd?: string) => {
+  try {
+    const { execSync } = require('child_process')
+    const dir = cwd || process.cwd()
+    const stat = execSync('git diff --stat', { cwd: dir, encoding: 'utf-8', timeout: 5000 })
+    return { success: true, stat }
+  } catch (err) {
+    return { success: false, stat: '', error: String(err) }
+  }
+})
+
 app.whenReady().then(createWindow)
 
 app.on('window-all-closed', () => {
