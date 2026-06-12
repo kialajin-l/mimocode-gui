@@ -1,4 +1,4 @@
-import { spawn, ChildProcess } from 'child_process'
+import { spawn, ChildProcess, execSync } from 'child_process'
 import path from 'path'
 import fs from 'fs'
 import { randomUUID } from 'crypto'
@@ -12,6 +12,15 @@ function findMimoBin(): string {
   for (const loc of locations) {
     if (fs.existsSync(loc)) return loc
   }
+
+  // Try to find via PATH
+  try {
+    const result = process.platform === 'win32'
+      ? execSync('where mimo', { encoding: 'utf-8', timeout: 3000 }).trim().split('\n')[0]
+      : execSync('which mimo', { encoding: 'utf-8', timeout: 3000 }).trim()
+    if (result && fs.existsSync(result)) return result
+  } catch {}
+
   return 'mimo'
 }
 
@@ -38,13 +47,11 @@ export async function sendMessage(
 
   try {
     const args = ['run', message]
-    if (options.model) {
-      args.push('--model', options.model)
+    if (options.model) args.push('--model', options.model)
+    if (options.permission && options.permission !== 'edit') {
+      args.push('--permission', options.permission)
     }
-    if (options.permission === 'readonly') {
-      args.push('--permission', 'readonly')
-    }
-    
+
     const child = spawn(MIMO_PATH, args, {
       stdio: ['pipe', 'pipe', 'pipe'],
       env: { ...process.env },
@@ -52,8 +59,6 @@ export async function sendMessage(
     })
 
     processes.set(sessionId, child)
-
-    // Close stdin immediately to prevent hanging
     child.stdin?.end()
 
     let fullText = ''
@@ -68,14 +73,9 @@ export async function sendMessage(
     child.stderr?.on('data', (chunk: Buffer) => {
       const text = chunk.toString()
       stderrBuffer += text
-      
-      // Parse stderr for metadata (e.g., "> build · mimo-auto")
       const metadataMatch = text.match(/^>\s*(\w+)\s*·\s*(\S+)/)
       if (metadataMatch) {
-        options.onChunk?.({ 
-          type: 'metadata', 
-          content: text.trim()
-        })
+        options.onChunk?.({ type: 'metadata', content: text.trim() })
       }
     })
 
@@ -114,27 +114,7 @@ export function isProcessRunning(sessionId: string): boolean {
 
 export function stopAllProcesses() {
   for (const [id, child] of processes) {
-    if (!child.killed) {
-      child.kill()
-    }
+    if (!child.killed) child.kill()
   }
   processes.clear()
 }
-
-// Legacy exports for compatibility
-export function listSessions(): Promise<Array<{ id: string; title: string; updated: string }>> {
-  return Promise.resolve([])
-}
-
-export function deleteSession(_sessionId: string): Promise<boolean> {
-  return Promise.resolve(true)
-}
-
-export function exportSession(_sessionId: string): Promise<null> {
-  return Promise.resolve(null)
-}
-
-export function getServerUrl(): string { return '' }
-export function isServerReady(): boolean { return true }
-export function startServer(): Promise<boolean> { return Promise.resolve(true) }
-export function stopServer() { stopAllProcesses() }

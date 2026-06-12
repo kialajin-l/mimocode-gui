@@ -1,7 +1,7 @@
 import { app, BrowserWindow, ipcMain, dialog } from 'electron'
 import path from 'path'
 import fs from 'fs'
-import { spawn, execSync, ChildProcess } from 'child_process'
+import { spawn, execFileSync, ChildProcess } from 'child_process'
 import { sendMessage, cancelMessage, getMimoPath, stopAllProcesses } from './cli-bridge'
 
 const DATA_DIR = app.getPath('userData')
@@ -104,6 +104,12 @@ ipcMain.handle('load-data', () => {
 
 ipcMain.handle('save-data', (_, data: any) => {
   try {
+    // Basic schema validation
+    if (!data || typeof data !== 'object') return false
+    if (data.sessions && !Array.isArray(data.sessions)) return false
+    if (data.projects && !Array.isArray(data.projects)) return false
+    if (data.activeSessionId !== null && data.activeSessionId !== undefined && typeof data.activeSessionId !== 'string') return false
+
     if (!fs.existsSync(DATA_DIR)) {
       fs.mkdirSync(DATA_DIR, { recursive: true })
     }
@@ -186,7 +192,6 @@ ipcMain.handle('git-diff', async (_, cwd?: string) => {
 
 ipcMain.handle('git-diff-stat', async (_, cwd?: string) => {
   try {
-    const { execFileSync } = require('child_process')
     const dir = cwd || process.cwd()
     const stat = execFileSync('git', ['diff', '--stat'], { cwd: dir, encoding: 'utf-8', timeout: 5000 })
     return { success: true, stat }
@@ -197,7 +202,6 @@ ipcMain.handle('git-diff-stat', async (_, cwd?: string) => {
 
 ipcMain.handle('git-accept', async (_, file: string, cwd?: string) => {
   try {
-    const { execFileSync } = require('child_process')
     const dir = cwd || process.cwd()
     execFileSync('git', ['add', file], { cwd: dir, timeout: 5000 })
     return { success: true }
@@ -208,7 +212,6 @@ ipcMain.handle('git-accept', async (_, file: string, cwd?: string) => {
 
 ipcMain.handle('git-reject', async (_, file: string, cwd?: string) => {
   try {
-    const { execFileSync } = require('child_process')
     const dir = cwd || process.cwd()
     execFileSync('git', ['checkout', 'HEAD', '--', file], { cwd: dir, timeout: 5000 })
     return { success: true }
@@ -248,7 +251,6 @@ ipcMain.handle('read-file', async (_, filePath: string) => {
 })
 
 ipcMain.handle('open-file', async (_, filters?: { name: string; extensions: string[] }[]) => {
-  const { dialog } = require('electron')
   const result = await dialog.showOpenDialog({
     properties: ['openFile'],
     filters: filters || [{ name: 'Markdown', extensions: ['md', 'markdown', 'txt'] }]

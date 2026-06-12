@@ -46,6 +46,7 @@ export function useSession() {
     }
 
     let streamContent = ''
+    const streamMsgId = crypto.randomUUID()
 
     const handleChunk = (chunk: any) => {
       if (chunk.type === 'text') {
@@ -53,7 +54,6 @@ export function useSession() {
         const storeState = useSessionStore.getState()
         const session = storeState.sessions.find(s => s.id === sessionId)
         if (session) {
-          const streamMsgId = 'stream-' + sessionId
           const idx = session.messages.findIndex(m => m.id === streamMsgId)
           if (idx >= 0) {
             const msgs = [...session.messages]
@@ -80,7 +80,7 @@ export function useSession() {
         const storeState = useSessionStore.getState()
         const session = storeState.sessions.find(s => s.id === sessionId)
         if (session) {
-          const finalMessages = session.messages.filter(m => !m.id.startsWith('stream-'))
+          const finalMessages = session.messages.filter(m => m.id !== streamMsgId)
           const assistantMessage: Message = {
             id: crypto.randomUUID(),
             role: 'assistant',
