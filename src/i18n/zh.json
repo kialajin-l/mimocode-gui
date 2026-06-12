@@ -1,0 +1,99 @@
+{
+  "app": {
+    "title": "MiMoCode"
+  },
+  "menu": {
+    "quickChat": "快速对话",
+    "file": "文件",
+    "edit": "编辑",
+    "view": "视图",
+    "help": "帮助"
+  },
+  "sidebar": {
+    "sessions": "会话",
+    "quickAccess": "快速访问",
+    "search": "搜索",
+    "plugins": "插件",
+    "automation": "自动化",
+    "projects": "项目",
+    "settings": "设置",
+    "newProject": "新建项目",
+    "other": "其他"
+  },
+  "session": {
+    "newSession": "新建会话",
+    "rename": "重命名",
+    "openInNewWindow": "在新窗口打开",
+    "delete": "删除",
+    "deleteConfirm": "确定删除吗？"
+  },
+  "chat": {
+    "placeholder": "描述你的需求...",
+    "thinking": "AI 正在思考...",
+    "send": "发送",
+    "cancel": "取消"
+  },
+  "input": {
+    "attach": "添加附件",
+    "readonly": "只读",
+    "allowEdit": "允许编辑",
+    "allowExecute": "允许执行"
+  },
+  "panel": {
+    "review": "审查",
+    "terminal": "终端",
+    "versions": "版本"
+  },
+  "review": {
+    "empty": "暂无审查内容",
+    "emptyHint": "AI 修改文件后将在此显示 Diff",
+    "modified": "已修改",
+    "created": "新建",
+    "deleted": "删除",
+    "accept": "接受更改",
+    "reject": "拒绝更改"
+  },
+  "terminal": {
+    "ready": "就绪。输入命令后按回车执行。",
+    "running": "运行中...",
+    "notAvailable": "终端不可用（浏览器模式）"
+  },
+  "version": {
+    "title": "版本历史",
+    "saveVersion": "保存版本",
+    "versionLabel": "版本标签（可选）",
+    "empty": "暂无保存的版本",
+    "restore": "恢复",
+    "messages": "{{count}} 条消息"
+  },
+  "workflow": {
+    "startWorkflow": "开始工作流",
+    "runStep": "执行并继续",
+    "runFinalStep": "执行最后一步",
+    "stopWorkflow": "停止",
+    "stepOf": "步骤 {{current}} / {{total}}"
+  },
+  "plugin": {
+    "title": "插件管理",
+    "empty": "暂无已安装的插件",
+    "emptyHint": "插件将在 mimo CLI 中注册后自动显示",
+    "remove": "移除插件"
+  },
+  "export": {
+    "exportSession": "导出会话",
+    "exportedFrom": "导出自 MiMoCode GUI"
+  },
+  "theme": {
+    "dark": "切换到亮色主题",
+    "light": "切换到暗色主题"
+  },
+  "search": {
+    "placeholder": "搜索会话和消息...",
+    "noResults": "未找到结果",
+    "moreResults": "还有 {{count}} 条结果"
+  },
+  "welcome": {
+    "title": "我们今天该做什么？",
+    "subtitle": "描述你的任务，我会帮你规划、编码、审查并执行。"
+  }
+}

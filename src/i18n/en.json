@@ -1,0 +1,99 @@
+{
+  "app": {
+    "title": "MiMoCode"
+  },
+  "menu": {
+    "quickChat": "Quick Chat",
+    "file": "File",
+    "edit": "Edit",
+    "view": "View",
+    "help": "Help"
+  },
+  "sidebar": {
+    "sessions": "Sessions",
+    "quickAccess": "Quick Access",
+    "search": "Search",
+    "plugins": "Plugins",
+    "automation": "Automation",
+    "projects": "Projects",
+    "settings": "Settings",
+    "newProject": "New project",
+    "other": "Other"
+  },
+  "session": {
+    "newSession": "New Session",
+    "rename": "Rename",
+    "openInNewWindow": "Open in new window",
+    "delete": "Delete",
+    "deleteConfirm": "Are you sure?"
+  },
+  "chat": {
+    "placeholder": "Describe your needs...",
+    "thinking": "AI is thinking...",
+    "send": "Send",
+    "cancel": "Cancel"
+  },
+  "input": {
+    "attach": "Attach file",
+    "readonly": "Read only",
+    "allowEdit": "Allow edit",
+    "allowExecute": "Allow execute"
+  },
+  "panel": {
+    "review": "Review",
+    "terminal": "Terminal",
+    "versions": "Versions"
+  },
+  "review": {
+    "empty": "No review content",
+    "emptyHint": "File changes will be shown here after AI modifications",
+    "modified": "Modified",
+    "created": "Created",
+    "deleted": "Deleted",
+    "accept": "Accept changes",
+    "reject": "Reject changes"
+  },
+  "terminal": {
+    "ready": "Ready. Type a command and press Enter.",
+    "running": "Running...",
+    "notAvailable": "Terminal not available (browser mode)"
+  },
+  "version": {
+    "title": "Version History",
+    "saveVersion": "Save version",
+    "versionLabel": "Version label (optional)",
+    "empty": "No saved versions",
+    "restore": "Restore",
+    "messages": "{{count}} messages"
+  },
+  "workflow": {
+    "startWorkflow": "Start workflow",
+    "runStep": "Run & continue",
+    "runFinalStep": "Run final step",
+    "stopWorkflow": "Stop",
+    "stepOf": "Step {{current}} of {{total}}"
+  },
+  "plugin": {
+    "title": "Plugin Manager",
+    "empty": "No installed plugins",
+    "emptyHint": "Plugins will appear here after registration in mimo CLI",
+    "remove": "Remove plugin"
+  },
+  "export": {
+    "exportSession": "Export session",
+    "exportedFrom": "Exported from MiMoCode GUI"
+  },
+  "theme": {
+    "dark": "Switch to light theme",
+    "light": "Switch to dark theme"
+  },
+  "search": {
+    "placeholder": "Search sessions and messages...",
+    "noResults": "No results found",
+    "moreResults": "{{count}} more results"
+  },
+  "welcome": {
+    "title": "What should we do today?",
+    "subtitle": "Describe your task, and I'll help you plan, code, review, and execute."
+  }
+}

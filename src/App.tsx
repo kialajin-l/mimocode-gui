@@ -9,6 +9,7 @@ import { SearchBar } from './components/Search/SearchBar'
 import { useSession } from './hooks/useSession'
 import { useKeyboardShortcuts, setTogglePanelCallback, setSearchOpenCallback } from './hooks/useKeyboardShortcuts'
 import { useSessionStore } from './stores/sessionStore'
+import { useI18n } from './i18n'
 import { parseDiff } from './utils/diffParser'
 import { exportSessionToMarkdown, sessionToFilename } from './utils/exportSession'
 import './App.css'
@@ -20,6 +21,7 @@ function App() {
   const [panelOpen, setPanelOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const { t, locale, setLocale } = useI18n()
   useKeyboardShortcuts()
 
   const togglePanel = useCallback(() => {
@@ -49,7 +51,7 @@ function App() {
         { type: 'session' as const, session: s },
         ...matchingMessages.map(m => ({ type: 'message' as const, session: s, message: m }))
       ]
-    })
+    }).slice(0, 20)
   }, [searchQuery, sessions])
 
   const refreshChanges = useCallback(async () => {
@@ -94,7 +96,6 @@ function App() {
     loadData()
   }, [])
 
-  // Handle sessionId from URL params (for multi-window)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const sessionId = params.get('sessionId')
@@ -120,13 +121,22 @@ function App() {
         )}
         <div className="title-bar">
           <div className="title-bar-left">
-            <span>快速对话</span>
-            <span>文件</span>
-            <span>编辑</span>
-            <span>视图</span>
-            <span>帮助</span>
+            <span>{t('menu.quickChat')}</span>
+            <span>{t('menu.file')}</span>
+            <span>{t('menu.edit')}</span>
+            <span>{t('menu.view')}</span>
+            <span>{t('menu.help')}</span>
           </div>
-          <div className="title-bar-right">Mimo Code</div>
+          <div className="title-bar-right">
+            <button
+              className="lang-toggle"
+              onClick={() => setLocale(locale === 'zh' ? 'en' : 'zh')}
+              title={locale === 'zh' ? 'Switch to English' : '切换到中文'}
+            >
+              {locale === 'zh' ? 'EN' : '中'}
+            </button>
+            {t('app.title')}
+          </div>
         </div>
 
         <div className="app-body">
@@ -141,28 +151,28 @@ function App() {
             </div>
 
             <div className="sidebar-scroll">
-              <div className="sidebar-section-label">快速对话</div>
+              <div className="sidebar-section-label">{t('sidebar.quickAccess')}</div>
               <button className="quick-item">
                 <span className="quick-icon">
                   <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 </span>
-                搜索
+                {t('sidebar.search')}
               </button>
               <button className="quick-item">
                 <span className="quick-icon">
                   <svg viewBox="0 0 24 24"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/><line x1="12" y1="22" x2="12" y2="15.5"/><polyline points="22 8.5 12 15.5 2 8.5"/></svg>
                 </span>
-                插件
+                {t('sidebar.plugins')}
               </button>
               <button className="quick-item">
                 <span className="quick-icon">
                   <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                 </span>
-                自动化
+                {t('sidebar.automation')}
               </button>
 
               <div className="sidebar-section-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingRight: 16 }}>
-                项目
+                {t('sidebar.projects')}
               </div>
 
               <SessionList />
@@ -171,7 +181,7 @@ function App() {
             <div className="sidebar-bottom">
               <button className="settings-item">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-                设置
+                {t('sidebar.settings')}
               </button>
             </div>
           </aside>
@@ -180,7 +190,7 @@ function App() {
             <header className="top-bar">
               <div className="top-bar-left">
                 <span className="session-breadcrumb">
-                  {activeSession?.name || 'MiMoCode'}
+                  {activeSession?.name || t('app.title')}
                 </span>
               </div>
               <div className="top-bar-right">
@@ -188,7 +198,7 @@ function App() {
                   <button
                     className="top-btn export-btn"
                     onClick={handleExportSession}
-                    title="导出会话"
+                    title={t('export.exportSession')}
                   >
                     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                   </button>
@@ -196,7 +206,7 @@ function App() {
                 <button
                   className={`top-btn ${panelOpen ? 'active' : ''}`}
                   onClick={() => setPanelOpen(!panelOpen)}
-                  title="切换面板"
+                  title={t('panel.review')}
                 >
                   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
                 </button>
@@ -212,8 +222,8 @@ function App() {
                   <div className="welcome-illustration">
                     <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
                   </div>
-                  <h2>我们今天该做什么？</h2>
-                  <p>描述你的任务，我会帮你规划、编码、审查并执行。</p>
+                  <h2>{t('welcome.title')}</h2>
+                  <p>{t('welcome.subtitle')}</p>
                 </div>
               )}
             </div>
