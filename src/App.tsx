@@ -6,6 +6,7 @@ import { MessageList } from './components/Chat/MessageList'
 import { MessageInput } from './components/Chat/MessageInput'
 import { RightPanel } from './components/Panel/RightPanel'
 import { SearchBar } from './components/Search/SearchBar'
+import { ShortcutHelp } from './components/Help/ShortcutHelp'
 import { useSession } from './hooks/useSession'
 import { useKeyboardShortcuts, setTogglePanelCallback, setSearchOpenCallback } from './hooks/useKeyboardShortcuts'
 import { useSessionStore } from './stores/sessionStore'
@@ -22,6 +23,7 @@ function App() {
   const [panelOpen, setPanelOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [shortcutHelpOpen, setShortcutHelpOpen] = useState(false)
   const { t, locale, setLocale } = useI18n()
   useKeyboardShortcuts()
 
@@ -131,13 +133,21 @@ function App() {
             }}
           />
         )}
+        {shortcutHelpOpen && (
+          <ShortcutHelp onClose={() => setShortcutHelpOpen(false)} />
+        )}
         <div className="title-bar">
           <div className="title-bar-left">
             <span>{t('menu.quickChat')}</span>
             <span>{t('menu.file')}</span>
             <span>{t('menu.edit')}</span>
             <span>{t('menu.view')}</span>
-            <span>{t('menu.help')}</span>
+            <span
+              className="menu-clickable"
+              onClick={() => setShortcutHelpOpen(true)}
+            >
+              {t('menu.help')}
+            </span>
           </div>
           <div className="title-bar-right">
             <button
