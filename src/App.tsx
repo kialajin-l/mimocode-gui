@@ -125,7 +125,11 @@ function App() {
             </div>
           </main>
 
-          <RightPanel open={panelOpen} onToggle={() => setPanelOpen(!panelOpen)} />
+          <RightPanel
+            open={panelOpen}
+            onToggle={() => setPanelOpen(!panelOpen)}
+            changes={activeSession?.changes || []}
+          />
         </div>
       </div>
     </ErrorBoundary>

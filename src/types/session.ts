@@ -1,3 +1,5 @@
+import { FileChange } from '../utils/diffParser'
+
 export interface Message {
   id: string
   role: 'user' | 'assistant' | 'system'
@@ -22,6 +24,7 @@ export interface Session {
   cwd: string
   messages: Message[]
   projectId: string | null
+  changes: FileChange[]
   createdAt: Date
   updatedAt: Date
 }

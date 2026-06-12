@@ -1,11 +1,14 @@
 import { useState } from 'react'
+import { FileChange } from '../../utils/diffParser'
+import { DiffViewer } from './DiffViewer'
 
 interface RightPanelProps {
   open: boolean
   onToggle: () => void
+  changes: FileChange[]
 }
 
-export function RightPanel({ open }: RightPanelProps) {
+export function RightPanel({ open, changes }: RightPanelProps) {
   const [activeTab, setActiveTab] = useState<'review' | 'terminal'>('review')
 
   return (
@@ -26,30 +29,15 @@ export function RightPanel({ open }: RightPanelProps) {
       </div>
 
       <div className="panel-content">
-        {activeTab === 'review' && <ReviewPanel />}
+        {activeTab === 'review' && <DiffViewer changes={changes} />}
         {activeTab === 'terminal' && <TerminalPanel />}
       </div>
     </aside>
   )
 }
 
-function ReviewPanel() {
-  return (
-    <div className="review-empty">
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" opacity="0.35">
-        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-        <polyline points="14 2 14 8 20 8" />
-      </svg>
-      <span>暂无审查内容</span>
-      <span style={{ fontSize: 11 }}>AI 修改文件后将在此显示 Diff</span>
-    </div>
-  )
-}
-
 function TerminalPanel() {
-  const [lines, setLines] = useState<string[]>([
-    '$ ',
-  ])
+  const [lines, setLines] = useState<string[]>(['$ '])
   const [input, setInput] = useState('')
 
   const handleInput = () => {

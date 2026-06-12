@@ -28,7 +28,8 @@ function reviveDates(data: any) {
       messages: (s.messages || []).map((m: any) => ({
         ...m,
         timestamp: new Date(m.timestamp)
-      }))
+      })),
+      changes: s.changes || []
     }))
   }
   if (data.projects) {
@@ -89,6 +90,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       cwd,
       messages: [],
       projectId: projectId || null,
+      changes: [],
       createdAt: new Date(),
       updatedAt: new Date()
     }
