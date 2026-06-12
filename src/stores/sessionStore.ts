@@ -8,6 +8,7 @@ interface SessionState {
   loaded: boolean
   loadData: () => Promise<void>
   createSession: (name: string, cwd: string, projectId?: string) => Session
+  importSession: (sessionData: Omit<Session, 'id' | 'createdAt' | 'updatedAt'>) => Session
   deleteSession: (id: string) => void
   setActiveSession: (id: string) => void
   addMessage: (sessionId: string, message: Message) => void
@@ -93,6 +94,21 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       versions: [],
       projectId: projectId || null,
       changes: [],
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
+    set((state) => ({
+      sessions: [...state.sessions, session],
+      activeSessionId: session.id
+    }))
+    scheduleSave()
+    return session
+  },
+
+  importSession: (sessionData) => {
+    const session: Session = {
+      ...sessionData,
+      id: crypto.randomUUID(),
       createdAt: new Date(),
       updatedAt: new Date()
     }

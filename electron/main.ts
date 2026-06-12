@@ -237,6 +237,35 @@ ipcMain.handle('save-file', async (_, content: string, defaultName: string) => {
   }
 })
 
+// File operations
+ipcMain.handle('read-file', async (_, filePath: string) => {
+  try {
+    const content = fs.readFileSync(filePath, 'utf-8')
+    return { success: true, content }
+  } catch (err) {
+    return { success: false, error: String(err) }
+  }
+})
+
+ipcMain.handle('open-file', async (_, filters?: { name: string; extensions: string[] }[]) => {
+  const { dialog } = require('electron')
+  const result = await dialog.showOpenDialog({
+    properties: ['openFile'],
+    filters: filters || [{ name: 'Markdown', extensions: ['md', 'markdown', 'txt'] }]
+  })
+
+  if (result.canceled || result.filePaths.length === 0) {
+    return { success: false, canceled: true }
+  }
+
+  try {
+    const content = fs.readFileSync(result.filePaths[0], 'utf-8')
+    return { success: true, content, filePath: result.filePaths[0] }
+  } catch (err) {
+    return { success: false, error: String(err) }
+  }
+})
+
 app.whenReady().then(createWindow)
 
 app.on('window-all-closed', () => {

@@ -90,5 +90,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   gitReject: (file: string, cwd?: string) => safeInvoke('git-reject', file, cwd),
 
   // Multi-window
-  openSessionWindow: (sessionId: string) => safeInvoke('open-session-window', sessionId)
+  openSessionWindow: (sessionId: string) => safeInvoke('open-session-window', sessionId),
+
+  // File operations
+  readFile: (filePath: string) => safeInvoke('read-file', filePath),
+  openFile: (filters?: { name: string; extensions: string[] }[]) => safeInvoke('open-file', filters)
 })

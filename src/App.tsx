@@ -12,6 +12,7 @@ import { useSessionStore } from './stores/sessionStore'
 import { useI18n } from './i18n'
 import { parseDiff } from './utils/diffParser'
 import { exportSessionToMarkdown, sessionToFilename } from './utils/exportSession'
+import { parseMarkdownToSession } from './utils/importSession'
 import './App.css'
 
 function App() {
@@ -91,6 +92,17 @@ function App() {
     const filename = sessionToFilename(activeSession)
     await api.saveFile(md, filename)
   }, [activeSession])
+
+  const handleImportSession = useCallback(async () => {
+    const api = window.electronAPI
+    if (!api) return
+    const result = await api.openFile()
+    if (result?.success && result.content) {
+      const sessionData = parseMarkdownToSession(result.content, result.filePath || 'imported')
+      const importSession = useSessionStore.getState().importSession
+      importSession(sessionData)
+    }
+  }, [])
 
   useEffect(() => {
     loadData()
@@ -194,6 +206,13 @@ function App() {
                 </span>
               </div>
               <div className="top-bar-right">
+                <button
+                  className="top-btn import-btn"
+                  onClick={handleImportSession}
+                  title="导入会话"
+                >
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                </button>
                 {activeSession && (
                   <button
                     className="top-btn export-btn"

@@ -48,6 +48,16 @@ interface ElectronAPI {
 
   // Multi-window
   openSessionWindow: (sessionId: string) => Promise<{ success: boolean; error?: string }>
+
+  // File operations
+  readFile: (filePath: string) => Promise<{ success: boolean; content?: string; error?: string }>
+  openFile: (filters?: { name: string; extensions: string[] }[]) => Promise<{
+    success: boolean
+    content?: string
+    filePath?: string
+    canceled?: boolean
+    error?: string
+  }>
 }
 
 declare global {

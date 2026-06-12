@@ -3,6 +3,7 @@ import remarkGfm from 'remark-gfm'
 import { Message } from '../../types/session'
 import { CodeBlock } from './CodeBlock'
 import { BookmarkButton } from './BookmarkButton'
+import { CopyButton } from './CopyButton'
 import { useSessionStore } from '../../stores/sessionStore'
 
 interface MessageListProps {
@@ -28,12 +29,15 @@ export function MessageList({ messages, sessionId }: MessageListProps) {
               <span className="message-time">
                 {message.timestamp.toLocaleTimeString()}
               </span>
-              {sessionId && (
-                <BookmarkButton
-                  bookmarked={message.bookmarked || false}
-                  onToggle={() => toggleBookmark(sessionId, message.id)}
-                />
-              )}
+              <div className="message-actions">
+                <CopyButton content={message.content} />
+                {sessionId && (
+                  <BookmarkButton
+                    bookmarked={message.bookmarked || false}
+                    onToggle={() => toggleBookmark(sessionId, message.id)}
+                  />
+                )}
+              </div>
             </div>
             <div className="message-text">
               <Markdown

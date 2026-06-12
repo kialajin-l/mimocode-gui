@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { FileChange } from '../../utils/diffParser'
 import { DiffViewer } from './DiffViewer'
 import { VersionHistory } from './VersionHistory'
+import { BookmarksPanel } from './BookmarksPanel'
 
 interface RightPanelProps {
   open: boolean
@@ -12,7 +13,7 @@ interface RightPanelProps {
 }
 
 export function RightPanel({ open, changes, sessionId, onAcceptChange, onRejectChange }: RightPanelProps) {
-  const [activeTab, setActiveTab] = useState<'review' | 'terminal' | 'versions'>('review')
+  const [activeTab, setActiveTab] = useState<'review' | 'terminal' | 'versions' | 'bookmarks'>('review')
 
   return (
     <aside className={`right-panel ${open ? 'open' : ''}`}>
@@ -30,12 +31,20 @@ export function RightPanel({ open, changes, sessionId, onAcceptChange, onRejectC
           终端
         </button>
         {sessionId && (
-          <button
-            className={`panel-tab ${activeTab === 'versions' ? 'active' : ''}`}
-            onClick={() => setActiveTab('versions')}
-          >
-            版本
-          </button>
+          <>
+            <button
+              className={`panel-tab ${activeTab === 'versions' ? 'active' : ''}`}
+              onClick={() => setActiveTab('versions')}
+            >
+              版本
+            </button>
+            <button
+              className={`panel-tab ${activeTab === 'bookmarks' ? 'active' : ''}`}
+              onClick={() => setActiveTab('bookmarks')}
+            >
+              书签
+            </button>
+          </>
         )}
       </div>
 
@@ -50,6 +59,9 @@ export function RightPanel({ open, changes, sessionId, onAcceptChange, onRejectC
         {activeTab === 'terminal' && <TerminalPanel />}
         {activeTab === 'versions' && sessionId && (
           <VersionHistory sessionId={sessionId} />
+        )}
+        {activeTab === 'bookmarks' && sessionId && (
+          <BookmarksPanel sessionId={sessionId} />
         )}
       </div>
     </aside>
