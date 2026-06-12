@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { FileChange } from '../../utils/diffParser'
 import { DiffViewer } from './DiffViewer'
 
@@ -36,14 +36,68 @@ export function RightPanel({ open, changes }: RightPanelProps) {
   )
 }
 
-function TerminalPanel() {
-  const [lines, setLines] = useState<string[]>(['$ '])
-  const [input, setInput] = useState('')
+interface TerminalLine {
+  type: 'input' | 'output' | 'error' | 'exit'
+  content: string
+}
 
-  const handleInput = () => {
-    if (!input.trim()) return
-    setLines(prev => [...prev.slice(0, -1), `$ ${input}`, ''])
+function TerminalPanel() {
+  const [lines, setLines] = useState<TerminalLine[]>([
+    { type: 'output', content: 'Ready. Type a command and press Enter.' }
+  ])
+  const [input, setInput] = useState('')
+  const [isRunning, setIsRunning] = useState(false)
+  const bodyRef = useRef<HTMLDivElement>(null)
+  const idRef = useRef(`term-${Date.now()}`)
+
+  useEffect(() => {
+    const api = window.electronAPI
+    if (!api) return
+
+    const id = idRef.current
+
+    api.onTerminalOutput(id, (data) => {
+      setLines(prev => [...prev, { type: 'output', content: data }])
+    })
+
+    api.onTerminalExit(id, (code) => {
+      setIsRunning(false)
+      if (code !== 0 && code !== null) {
+        setLines(prev => [...prev, { type: 'exit', content: `Process exited with code ${code}` }])
+      }
+    })
+
+    return () => {
+      api.removeTerminalListeners(id)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (bodyRef.current) {
+      bodyRef.current.scrollTop = bodyRef.current.scrollHeight
+    }
+  }, [lines])
+
+  const handleExecute = async () => {
+    if (!input.trim() || isRunning) return
+
+    const command = input.trim()
     setInput('')
+    setLines(prev => [...prev, { type: 'input', content: `$ ${command}` }])
+
+    if (command === 'clear') {
+      setLines([])
+      return
+    }
+
+    const api = window.electronAPI
+    if (!api) {
+      setLines(prev => [...prev, { type: 'error', content: 'Terminal not available (browser mode)' }])
+      return
+    }
+
+    setIsRunning(true)
+    await api.terminalExecute(idRef.current, command)
   }
 
   return (
@@ -54,13 +108,17 @@ function TerminalPanel() {
         </div>
         <span style={{ fontSize: 11 }}>mimocode-gui</span>
       </div>
-      <div className="terminal-body">
+      <div className="terminal-body" ref={bodyRef}>
         {lines.map((line, i) => (
           <div key={i} className="terminal-line">
-            {line.startsWith('$') ? (
-              <><span className="prompt">{line.charAt(0)}</span>{line.slice(1)}</>
+            {line.type === 'input' ? (
+              <><span className="prompt">{line.content.charAt(0)}</span>{line.content.slice(1)}</>
+            ) : line.type === 'error' ? (
+              <span style={{ color: 'var(--error-color)' }}>{line.content}</span>
+            ) : line.type === 'exit' ? (
+              <span style={{ color: 'var(--text-tertiary)', fontStyle: 'italic' }}>{line.content}</span>
             ) : (
-              <span className="output">{line}</span>
+              <span className="output">{line.content}</span>
             )}
           </div>
         ))}
@@ -70,7 +128,9 @@ function TerminalPanel() {
             className="terminal-input"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleInput()}
+            onKeyDown={(e) => e.key === 'Enter' && handleExecute()}
+            placeholder={isRunning ? 'Running...' : ''}
+            disabled={isRunning}
             autoFocus
           />
         </div>

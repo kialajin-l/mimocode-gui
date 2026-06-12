@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron'
 
 const chunkListeners = new Map<string, (...args: any[]) => void>()
+const terminalListeners = new Map<string, (...args: any[]) => void>()
 
 function safeInvoke(channel: string, ...args: any[]): Promise<any> {
   return ipcRenderer.invoke(channel, ...args).catch((err) => {
@@ -10,6 +11,7 @@ function safeInvoke(channel: string, ...args: any[]): Promise<any> {
 }
 
 contextBridge.exposeInMainWorld('electronAPI', {
+  // Chat messaging
   sendMessage: (sessionId: string, message: string, cwd?: string) =>
     safeInvoke('send-message', sessionId, message, cwd),
 
@@ -36,6 +38,43 @@ contextBridge.exposeInMainWorld('electronAPI', {
     }
   },
 
+  // Terminal execution
+  terminalExecute: (id: string, command: string, cwd?: string) =>
+    safeInvoke('terminal-execute', id, command, cwd),
+
+  terminalKill: (id: string) =>
+    safeInvoke('terminal-kill', id),
+
+  onTerminalOutput: (id: string, callback: (data: string) => void) => {
+    const existing = terminalListeners.get(id)
+    if (existing) {
+      ipcRenderer.removeListener('terminal-output', existing)
+    }
+    const listener = (_: any, tid: string, data: string) => {
+      if (tid === id) callback(data)
+    }
+    terminalListeners.set(id, listener)
+    ipcRenderer.on('terminal-output', listener)
+  },
+
+  onTerminalExit: (id: string, callback: (code: number | null) => void) => {
+    const channel = `terminal-exit-${id}`
+    const listener = (_: any, tid: string, code: number | null) => {
+      if (tid === id) callback(code)
+    }
+    ipcRenderer.on(channel, listener)
+    return () => ipcRenderer.removeListener(channel, listener)
+  },
+
+  removeTerminalListeners: (id: string) => {
+    const listener = terminalListeners.get(id)
+    if (listener) {
+      ipcRenderer.removeListener('terminal-output', listener)
+      terminalListeners.delete(id)
+    }
+  },
+
+  // Data persistence
   getMimoPath: () => safeInvoke('get-mimo-path'),
   loadData: () => safeInvoke('load-data'),
   saveData: (data: any) => safeInvoke('save-data', data)

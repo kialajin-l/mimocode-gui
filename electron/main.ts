@@ -1,6 +1,7 @@
 import { app, BrowserWindow, ipcMain } from 'electron'
 import path from 'path'
 import fs from 'fs'
+import { spawn, ChildProcess } from 'child_process'
 import { sendMessage, cancelMessage, getMimoPath, stopAllProcesses } from './cli-bridge'
 
 const DATA_DIR = app.getPath('userData')
@@ -114,6 +115,59 @@ ipcMain.handle('save-data', (_, data: any) => {
 
 app.on('before-quit', () => {
   stopAllProcesses()
+  for (const proc of terminalProcesses.values()) {
+    if (!proc.killed) proc.kill()
+  }
+  terminalProcesses.clear()
+})
+
+// Terminal execution
+const terminalProcesses = new Map<string, ChildProcess>()
+
+ipcMain.handle('terminal-execute', (_, id: string, command: string, cwd?: string) => {
+  try {
+    const isWin = process.platform === 'win32'
+    const child = spawn(isWin ? 'cmd.exe' : 'bash', isWin ? ['/c', command] : ['-c', command], {
+      cwd: cwd || process.cwd(),
+      env: { ...process.env },
+      stdio: ['pipe', 'pipe', 'pipe']
+    })
+
+    terminalProcesses.set(id, child)
+
+    child.stdout?.on('data', (data: Buffer) => {
+      mainWindow?.webContents.send('terminal-output', id, data.toString())
+    })
+
+    child.stderr?.on('data', (data: Buffer) => {
+      mainWindow?.webContents.send('terminal-output', id, data.toString())
+    })
+
+    child.on('close', (code) => {
+      terminalProcesses.delete(id)
+      mainWindow?.webContents.send('terminal-exit', id, code)
+    })
+
+    child.on('error', (err) => {
+      terminalProcesses.delete(id)
+      mainWindow?.webContents.send('terminal-output', id, `Error: ${err.message}\n`)
+      mainWindow?.webContents.send('terminal-exit', id, 1)
+    })
+
+    return { success: true, pid: child.pid }
+  } catch (err) {
+    return { success: false, error: String(err) }
+  }
+})
+
+ipcMain.handle('terminal-kill', (_, id: string) => {
+  const proc = terminalProcesses.get(id)
+  if (proc && !proc.killed) {
+    proc.kill()
+    terminalProcesses.delete(id)
+    return true
+  }
+  return false
 })
 
 app.whenReady().then(createWindow)
