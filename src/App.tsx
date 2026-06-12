@@ -10,6 +10,7 @@ import { useSession } from './hooks/useSession'
 import { useKeyboardShortcuts, setTogglePanelCallback, setSearchOpenCallback } from './hooks/useKeyboardShortcuts'
 import { useSessionStore } from './stores/sessionStore'
 import { parseDiff } from './utils/diffParser'
+import { exportSessionToMarkdown, sessionToFilename } from './utils/exportSession'
 import './App.css'
 
 function App() {
@@ -80,6 +81,14 @@ function App() {
     await api.gitReject(file, activeSession.cwd || '.')
     refreshChanges()
   }, [activeSession, refreshChanges])
+
+  const handleExportSession = useCallback(async () => {
+    const api = window.electronAPI
+    if (!api || !activeSession) return
+    const md = exportSessionToMarkdown(activeSession)
+    const filename = sessionToFilename(activeSession)
+    await api.saveFile(md, filename)
+  }, [activeSession])
 
   useEffect(() => {
     loadData()
@@ -165,6 +174,15 @@ function App() {
                 </span>
               </div>
               <div className="top-bar-right">
+                {activeSession && (
+                  <button
+                    className="top-btn export-btn"
+                    onClick={handleExportSession}
+                    title="导出会话"
+                  >
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  </button>
+                )}
                 <button
                   className={`top-btn ${panelOpen ? 'active' : ''}`}
                   onClick={() => setPanelOpen(!panelOpen)}

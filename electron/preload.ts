@@ -74,6 +74,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     }
   },
 
+  // File save
+  saveFile: (content: string, defaultName: string) =>
+    safeInvoke('save-file', content, defaultName),
+
   // Data persistence
   getMimoPath: () => safeInvoke('get-mimo-path'),
   loadData: () => safeInvoke('load-data'),

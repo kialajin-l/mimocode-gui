@@ -27,6 +27,14 @@ interface ElectronAPI {
   onTerminalExit: (id: string, callback: (code: number | null) => void) => (() => void)
   removeTerminalListeners: (id: string) => void
 
+  // File
+  saveFile: (content: string, defaultName: string) => Promise<{
+    success: boolean
+    path?: string
+    canceled?: boolean
+    error?: string
+  }>
+
   // Data
   getMimoPath: () => Promise<string>
   loadData: () => Promise<any>

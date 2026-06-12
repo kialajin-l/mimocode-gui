@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog } from 'electron'
 import path from 'path'
 import fs from 'fs'
 import { spawn, execSync, ChildProcess } from 'child_process'
@@ -213,6 +213,26 @@ ipcMain.handle('git-reject', async (_, file: string, cwd?: string) => {
     execFileSync('git', ['checkout', 'HEAD', '--', file], { cwd: dir, timeout: 5000 })
     return { success: true }
   } catch (err) {
+    return { success: false, error: String(err) }
+  }
+})
+
+ipcMain.handle('save-file', async (_, content: string, defaultName: string) => {
+  try {
+    const result = await dialog.showSaveDialog(mainWindow!, {
+      defaultPath: defaultName,
+      filters: [
+        { name: 'Markdown', extensions: ['md'] },
+        { name: 'All Files', extensions: ['*'] }
+      ]
+    })
+    if (result.canceled || !result.filePath) {
+      return { success: false, canceled: true }
+    }
+    fs.writeFileSync(result.filePath, content, 'utf-8')
+    return { success: true, path: result.filePath }
+  } catch (err) {
+    console.error('[Main] save-file error:', err)
     return { success: false, error: String(err) }
   }
 })
