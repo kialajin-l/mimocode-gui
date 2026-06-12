@@ -137,6 +137,7 @@ export function useSession() {
     createSession,
     deleteSession,
     setActiveSession,
+    updateSession,
     sendMessage,
     cancelMessage,
     createProject,

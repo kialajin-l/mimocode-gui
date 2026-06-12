@@ -344,6 +344,19 @@ html, body {
   color: var(--error-color);
 }
 
+.session-rename-input {
+  flex: 1;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--accent-color);
+  border-radius: 4px;
+  padding: 2px 6px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 12.5px;
+  outline: none;
+  min-width: 0;
+}
+
 /* Session list (wrapper) */
 .session-list {
   display: flex;

@@ -5,7 +5,7 @@ import { ProjectNode } from './ProjectNode'
 export function SessionList() {
   const {
     sessions, projects, activeSessionId, createSession, deleteSession,
-    setActiveSession, createProject
+    setActiveSession, createProject, updateSession
   } = useSession()
   const [showNewProject, setShowNewProject] = useState(false)
   const [newProjectName, setNewProjectName] = useState('')
@@ -31,6 +31,10 @@ export function SessionList() {
     if (!expandedProjectIds.includes(projectId)) {
       setExpandedProjectIds(prev => [...prev, projectId])
     }
+  }
+
+  const handleRenameSession = (id: string, name: string) => {
+    updateSession(id, { name })
   }
 
   const ungroupedSessions = sessions.filter(s => !s.projectId)
@@ -66,6 +70,7 @@ export function SessionList() {
             onToggle={() => toggleProject(project.id)}
             onSelectSession={setActiveSession}
             onDeleteSession={deleteSession}
+            onRenameSession={handleRenameSession}
             onNewSession={handleNewSessionInProject}
           />
         ))}
