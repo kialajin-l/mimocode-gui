@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { ThemeSwitcher } from './components/Settings/ThemeSwitcher'
 import { SessionList } from './components/Sidebar/SessionList'
@@ -6,7 +6,7 @@ import { MessageList } from './components/Chat/MessageList'
 import { MessageInput } from './components/Chat/MessageInput'
 import { RightPanel } from './components/Panel/RightPanel'
 import { useSession } from './hooks/useSession'
-import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
+import { useKeyboardShortcuts, setTogglePanelCallback } from './hooks/useKeyboardShortcuts'
 import { useSessionStore } from './stores/sessionStore'
 import './App.css'
 
@@ -15,6 +15,15 @@ function App() {
   const loadData = useSessionStore(s => s.loadData)
   const [panelOpen, setPanelOpen] = useState(false)
   useKeyboardShortcuts()
+
+  const togglePanel = useCallback(() => {
+    setPanelOpen(prev => !prev)
+  }, [])
+
+  useEffect(() => {
+    setTogglePanelCallback(togglePanel)
+    return () => setTogglePanelCallback(null)
+  }, [togglePanel])
 
   useEffect(() => {
     loadData()
