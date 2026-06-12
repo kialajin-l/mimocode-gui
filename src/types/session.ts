@@ -5,6 +5,7 @@ export interface Message {
   role: 'user' | 'assistant' | 'system'
   content: string
   timestamp: Date
+  bookmarked?: boolean
 }
 
 export interface Project {

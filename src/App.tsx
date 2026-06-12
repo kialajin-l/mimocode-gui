@@ -216,7 +216,7 @@ function App() {
 
             <div className="chat-area">
               {activeSession ? (
-                <MessageList messages={activeSession.messages} />
+                <MessageList messages={activeSession.messages} sessionId={activeSession.id} />
               ) : (
                 <div className="welcome">
                   <div className="welcome-illustration">

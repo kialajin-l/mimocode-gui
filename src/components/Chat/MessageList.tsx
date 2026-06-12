@@ -2,12 +2,17 @@ import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Message } from '../../types/session'
 import { CodeBlock } from './CodeBlock'
+import { BookmarkButton } from './BookmarkButton'
+import { useSessionStore } from '../../stores/sessionStore'
 
 interface MessageListProps {
   messages: Message[]
+  sessionId?: string
 }
 
-export function MessageList({ messages }: MessageListProps) {
+export function MessageList({ messages, sessionId }: MessageListProps) {
+  const toggleBookmark = useSessionStore(s => s.toggleMessageBookmark)
+
   return (
     <div className="message-list">
       {messages.map((message) => (
@@ -23,6 +28,12 @@ export function MessageList({ messages }: MessageListProps) {
               <span className="message-time">
                 {message.timestamp.toLocaleTimeString()}
               </span>
+              {sessionId && (
+                <BookmarkButton
+                  bookmarked={message.bookmarked || false}
+                  onToggle={() => toggleBookmark(sessionId, message.id)}
+                />
+              )}
             </div>
             <div className="message-text">
               <Markdown

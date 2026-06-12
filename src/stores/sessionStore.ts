@@ -12,6 +12,7 @@ interface SessionState {
   setActiveSession: (id: string) => void
   addMessage: (sessionId: string, message: Message) => void
   updateSession: (id: string, updates: Partial<Session>) => void
+  toggleMessageBookmark: (sessionId: string, messageId: string) => void
   createProject: (name: string) => Project
   deleteProject: (id: string) => void
 }
@@ -132,6 +133,22 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       sessions: state.sessions.map((s) =>
         s.id === id ? { ...s, ...updates, updatedAt: new Date() } : s
       )
+    }))
+    scheduleSave()
+  },
+
+  toggleMessageBookmark: (sessionId, messageId) => {
+    set((state) => ({
+      sessions: state.sessions.map((s) => {
+        if (s.id !== sessionId) return s
+        return {
+          ...s,
+          messages: s.messages.map((m) =>
+            m.id === messageId ? { ...m, bookmarked: !m.bookmarked } : m
+          ),
+          updatedAt: new Date()
+        }
+      })
     }))
     scheduleSave()
   },

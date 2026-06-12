@@ -2327,3 +2327,34 @@ html, body {
 .hljs-params {
   color: #89ddff;
 }
+
+/* Bookmark button */
+.bookmark-btn {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  opacity: 0;
+  transition: all var(--transition-speed);
+  flex-shrink: 0;
+}
+
+.message:hover .bookmark-btn {
+  opacity: 1;
+}
+
+.bookmark-btn:hover {
+  background: var(--bg-tertiary);
+  color: var(--accent-color);
+}
+
+.bookmark-btn.bookmarked {
+  opacity: 1;
+  color: var(--accent-color);
+}
