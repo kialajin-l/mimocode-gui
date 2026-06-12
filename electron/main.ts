@@ -145,13 +145,13 @@ ipcMain.handle('terminal-execute', (_, id: string, command: string, cwd?: string
 
     child.on('close', (code) => {
       terminalProcesses.delete(id)
-      mainWindow?.webContents.send('terminal-exit', id, code)
+      mainWindow?.webContents.send(`terminal-exit-${id}`, id, code)
     })
 
     child.on('error', (err) => {
       terminalProcesses.delete(id)
       mainWindow?.webContents.send('terminal-output', id, `Error: ${err.message}\n`)
-      mainWindow?.webContents.send('terminal-exit', id, 1)
+      mainWindow?.webContents.send(`terminal-exit-${id}`, id, 1)
     })
 
     return { success: true, pid: child.pid }

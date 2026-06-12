@@ -5,9 +5,9 @@ import { randomUUID } from 'crypto'
 
 function findMimoBin(): string {
   const locations = [
-    'L:\\DevTools\\nodejs\\node_global\\node_modules\\@mimo-ai\\mimocode-windows-x64\\bin\\mimo.exe',
     path.join(process.env.APPDATA || '', '..', 'Local', 'npm', 'node_modules', '@mimo-ai', 'mimocode-windows-x64', 'bin', 'mimo.exe'),
     path.join(process.env.APPDATA || '', 'npm', 'node_modules', '@mimo-ai', 'mimocode-windows-x64', 'bin', 'mimo.exe'),
+    path.join(process.env.LOCALAPPDATA || '', 'npm', 'node_modules', '@mimo-ai', 'mimocode-windows-x64', 'bin', 'mimo.exe'),
   ]
   for (const loc of locations) {
     if (fs.existsSync(loc)) return loc
@@ -22,19 +22,12 @@ export function getMimoPath(): string { return MIMO_PATH }
 // Active processes for session management
 const processes = new Map<string, ChildProcess>()
 
-export interface RunResult {
-  type: 'text' | 'tool_use' | 'tool_result' | 'thinking' | 'error' | 'metadata'
-  content: string
-  toolName?: string
-  toolArgs?: Record<string, unknown>
-}
-
 export async function sendMessage(
   message: string,
   options: {
     sessionId?: string
     cwd?: string
-    onChunk?: (chunk: RunResult) => void
+    onChunk?: (chunk: { type: string; content: string }) => void
     onComplete?: (fullText: string) => void
     onError?: (error: string) => void
   }

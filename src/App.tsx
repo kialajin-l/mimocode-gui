@@ -136,7 +136,6 @@ function App() {
 
           <RightPanel
             open={panelOpen}
-            onToggle={() => setPanelOpen(!panelOpen)}
             changes={activeSession?.changes || []}
           />
         </div>

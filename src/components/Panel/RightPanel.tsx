@@ -4,7 +4,6 @@ import { DiffViewer } from './DiffViewer'
 
 interface RightPanelProps {
   open: boolean
-  onToggle: () => void
   changes: FileChange[]
   onAcceptChange?: (file: string) => void
   onRejectChange?: (file: string) => void
