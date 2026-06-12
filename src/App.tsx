@@ -94,6 +94,16 @@ function App() {
     loadData()
   }, [])
 
+  // Handle sessionId from URL params (for multi-window)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const sessionId = params.get('sessionId')
+    if (sessionId) {
+      const selectSession = useSessionStore.getState().setActiveSession
+      selectSession(sessionId)
+    }
+  }, [])
+
   return (
     <ErrorBoundary>
       <div className="app">
@@ -222,6 +232,7 @@ function App() {
           <RightPanel
             open={panelOpen}
             changes={activeSession?.changes || []}
+            sessionId={activeSession?.id}
             onAcceptChange={handleAcceptChange}
             onRejectChange={handleRejectChange}
           />

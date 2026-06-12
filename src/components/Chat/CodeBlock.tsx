@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import hljs from 'highlight.js'
+
+const hljsPromise = import('highlight.js')
 
 interface CodeBlockProps {
   code: string
@@ -9,12 +10,18 @@ interface CodeBlockProps {
 export function CodeBlock({ code, language }: CodeBlockProps) {
   const codeRef = useRef<HTMLElement>(null)
   const [copied, setCopied] = useState(false)
+  const [highlighted, setHighlighted] = useState(false)
 
   useEffect(() => {
-    if (codeRef.current && language) {
-      hljs.highlightElement(codeRef.current)
+    if (codeRef.current && language && !highlighted) {
+      hljsPromise.then(hljs => {
+        if (codeRef.current) {
+          hljs.default.highlightElement(codeRef.current)
+          setHighlighted(true)
+        }
+      })
     }
-  }, [code, language])
+  }, [code, language, highlighted])
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(code)

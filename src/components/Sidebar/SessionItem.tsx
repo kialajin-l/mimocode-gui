@@ -7,11 +7,13 @@ interface SessionItemProps {
   onSelect: () => void
   onDelete: () => void
   onRename: (id: string, name: string) => void
+  onOpenInNewWindow?: (id: string) => void
 }
 
-export function SessionItem({ session, isActive, onSelect, onDelete, onRename }: SessionItemProps) {
+export function SessionItem({ session, isActive, onSelect, onDelete, onRename, onOpenInNewWindow }: SessionItemProps) {
   const [editing, setEditing] = useState(false)
   const [editValue, setEditValue] = useState(session.name)
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -21,10 +23,24 @@ export function SessionItem({ session, isActive, onSelect, onDelete, onRename }:
     }
   }, [editing])
 
+  useEffect(() => {
+    const handleClick = () => setContextMenu(null)
+    if (contextMenu) {
+      window.addEventListener('click', handleClick)
+      return () => window.removeEventListener('click', handleClick)
+    }
+  }, [contextMenu])
+
   const handleDoubleClick = (e: React.MouseEvent) => {
     e.stopPropagation()
     setEditValue(session.name)
     setEditing(true)
+  }
+
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setContextMenu({ x: e.clientX, y: e.clientY })
   }
 
   const handleSubmit = () => {
@@ -44,37 +60,79 @@ export function SessionItem({ session, isActive, onSelect, onDelete, onRename }:
   }
 
   return (
-    <div
-      className={`session-item ${isActive ? 'active' : ''}`}
-      onClick={onSelect}
-      onDoubleClick={handleDoubleClick}
-    >
-      {editing ? (
-        <input
-          ref={inputRef}
-          className="session-rename-input"
-          value={editValue}
-          onChange={(e) => setEditValue(e.target.value)}
-          onBlur={handleSubmit}
-          onKeyDown={handleKeyDown}
-          onClick={(e) => e.stopPropagation()}
-        />
-      ) : (
-        <span className="session-title">{session.name}</span>
-      )}
-      <button
-        className="session-delete-btn"
-        onClick={(e) => {
-          e.stopPropagation()
-          onDelete()
-        }}
-        title="删除会话"
+    <>
+      <div
+        className={`session-item ${isActive ? 'active' : ''}`}
+        onClick={onSelect}
+        onDoubleClick={handleDoubleClick}
+        onContextMenu={handleContextMenu}
       >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <line x1="18" y1="6" x2="6" y2="18" />
-          <line x1="6" y1="6" x2="18" y2="18" />
-        </svg>
-      </button>
-    </div>
+        {editing ? (
+          <input
+            ref={inputRef}
+            className="session-rename-input"
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            onBlur={handleSubmit}
+            onKeyDown={handleKeyDown}
+            onClick={(e) => e.stopPropagation()}
+          />
+        ) : (
+          <span className="session-title">{session.name}</span>
+        )}
+        <button
+          className="session-delete-btn"
+          onClick={(e) => {
+            e.stopPropagation()
+            onDelete()
+          }}
+          title="删除会话"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+
+      {contextMenu && (
+        <div
+          className="context-menu"
+          style={{ left: contextMenu.x, top: contextMenu.y }}
+        >
+          <button
+            className="context-menu-item"
+            onClick={() => {
+              setContextMenu(null)
+              setEditValue(session.name)
+              setEditing(true)
+            }}
+          >
+            重命名
+          </button>
+          {onOpenInNewWindow && (
+            <button
+              className="context-menu-item"
+              onClick={() => {
+                setContextMenu(null)
+                onOpenInNewWindow(session.id)
+              }}
+            >
+              在新窗口打开
+            </button>
+          )}
+          <div className="context-menu-separator" />
+          <button
+            className="context-menu-item danger"
+            onClick={() => {
+              setContextMenu(null)
+              onDelete()
+            }}
+          >
+            删除
+          </button>
+        </div>
+      )}
+    </>
   )
 }

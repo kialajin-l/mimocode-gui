@@ -251,3 +251,25 @@ app.on('activate', () => {
     createWindow()
   }
 })
+
+// Multi-window support
+ipcMain.handle('open-session-window', async (_, sessionId: string) => {
+  const sessionWindow = new BrowserWindow({
+    width: 1000,
+    height: 700,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false
+    }
+  })
+
+  const distPath = path.join(__dirname, '..', 'dist', 'index.html')
+  if (fs.existsSync(distPath)) {
+    sessionWindow.loadFile(distPath, { search: `sessionId=${sessionId}` })
+  } else {
+    sessionWindow.loadURL(`http://localhost:5173?sessionId=${sessionId}`)
+  }
+
+  return { success: true }
+})

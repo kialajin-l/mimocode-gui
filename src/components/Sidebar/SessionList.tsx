@@ -37,6 +37,13 @@ export function SessionList() {
     updateSession(id, { name })
   }
 
+  const handleOpenInNewWindow = async (id: string) => {
+    const api = window.electronAPI
+    if (api) {
+      await api.openSessionWindow(id)
+    }
+  }
+
   const ungroupedSessions = sessions.filter(s => !s.projectId)
 
   return (
@@ -71,6 +78,7 @@ export function SessionList() {
             onSelectSession={setActiveSession}
             onDeleteSession={deleteSession}
             onRenameSession={handleRenameSession}
+            onOpenInNewWindow={handleOpenInNewWindow}
             onNewSession={handleNewSessionInProject}
           />
         ))}

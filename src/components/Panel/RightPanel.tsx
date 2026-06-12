@@ -1,16 +1,18 @@
 import { useState, useRef, useEffect } from 'react'
 import { FileChange } from '../../utils/diffParser'
 import { DiffViewer } from './DiffViewer'
+import { VersionHistory } from './VersionHistory'
 
 interface RightPanelProps {
   open: boolean
   changes: FileChange[]
+  sessionId?: string
   onAcceptChange?: (file: string) => void
   onRejectChange?: (file: string) => void
 }
 
-export function RightPanel({ open, changes, onAcceptChange, onRejectChange }: RightPanelProps) {
-  const [activeTab, setActiveTab] = useState<'review' | 'terminal'>('review')
+export function RightPanel({ open, changes, sessionId, onAcceptChange, onRejectChange }: RightPanelProps) {
+  const [activeTab, setActiveTab] = useState<'review' | 'terminal' | 'versions'>('review')
 
   return (
     <aside className={`right-panel ${open ? 'open' : ''}`}>
@@ -27,6 +29,14 @@ export function RightPanel({ open, changes, onAcceptChange, onRejectChange }: Ri
         >
           终端
         </button>
+        {sessionId && (
+          <button
+            className={`panel-tab ${activeTab === 'versions' ? 'active' : ''}`}
+            onClick={() => setActiveTab('versions')}
+          >
+            版本
+          </button>
+        )}
       </div>
 
       <div className="panel-content">
@@ -38,6 +48,9 @@ export function RightPanel({ open, changes, onAcceptChange, onRejectChange }: Ri
           />
         )}
         {activeTab === 'terminal' && <TerminalPanel />}
+        {activeTab === 'versions' && sessionId && (
+          <VersionHistory sessionId={sessionId} />
+        )}
       </div>
     </aside>
   )

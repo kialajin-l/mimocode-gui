@@ -88,7 +88,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   gitDiffStat: (cwd?: string) => safeInvoke('git-diff-stat', cwd),
   gitAccept: (file: string, cwd?: string) => safeInvoke('git-accept', file, cwd),
   gitReject: (file: string, cwd?: string) => safeInvoke('git-reject', file, cwd),
-  gitStageFile: (file: string, cwd?: string) => safeInvoke('git-stage-file', file, cwd),
-  gitDiscardChanges: (file: string, cwd?: string) => safeInvoke('git-discard-changes', file, cwd),
-  gitDiffFiles: (cwd?: string) => safeInvoke('git-diff-files', cwd)
+
+  // Multi-window
+  openSessionWindow: (sessionId: string) => safeInvoke('open-session-window', sessionId)
 })

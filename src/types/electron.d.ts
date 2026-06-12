@@ -45,6 +45,9 @@ interface ElectronAPI {
   gitDiffStat: (cwd?: string) => Promise<{ success: boolean; stat: string; error?: string }>
   gitAccept: (file: string, cwd?: string) => Promise<{ success: boolean; error?: string }>
   gitReject: (file: string, cwd?: string) => Promise<{ success: boolean; error?: string }>
+
+  // Multi-window
+  openSessionWindow: (sessionId: string) => Promise<{ success: boolean; error?: string }>
 }
 
 declare global {

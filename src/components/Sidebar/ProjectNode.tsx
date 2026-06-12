@@ -10,12 +10,13 @@ interface ProjectNodeProps {
   onSelectSession: (id: string) => void
   onDeleteSession: (id: string) => void
   onRenameSession: (id: string, name: string) => void
+  onOpenInNewWindow?: (id: string) => void
   onNewSession: (projectId: string) => void
 }
 
 export function ProjectNode({
   project, sessions, activeSessionId, expanded, onToggle,
-  onSelectSession, onDeleteSession, onRenameSession, onNewSession
+  onSelectSession, onDeleteSession, onRenameSession, onOpenInNewWindow, onNewSession
 }: ProjectNodeProps) {
   return (
     <div className={`project-node ${expanded ? 'expanded' : ''}`}>
@@ -45,6 +46,7 @@ export function ProjectNode({
               onSelect={() => onSelectSession(session.id)}
               onDelete={() => onDeleteSession(session.id)}
               onRename={onRenameSession}
+              onOpenInNewWindow={onOpenInNewWindow}
             />
           ))}
         </div>
