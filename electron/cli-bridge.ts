@@ -27,6 +27,8 @@ export async function sendMessage(
   options: {
     sessionId?: string
     cwd?: string
+    model?: string
+    permission?: string
     onChunk?: (chunk: { type: string; content: string }) => void
     onComplete?: (fullText: string) => void
     onError?: (error: string) => void
@@ -36,6 +38,12 @@ export async function sendMessage(
 
   try {
     const args = ['run', message]
+    if (options.model) {
+      args.push('--model', options.model)
+    }
+    if (options.permission === 'readonly') {
+      args.push('--permission', 'readonly')
+    }
     
     const child = spawn(MIMO_PATH, args, {
       stdio: ['pipe', 'pipe', 'pipe'],

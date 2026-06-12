@@ -1,7 +1,7 @@
 import { useState, KeyboardEvent } from 'react'
 
 interface MessageInputProps {
-  onSend: (message: string) => void
+  onSend: (message: string, model: string, permission: string) => void
   onCancel?: () => void
   disabled?: boolean
   isRunning?: boolean
@@ -14,7 +14,7 @@ export function MessageInput({ onSend, onCancel, disabled, isRunning }: MessageI
 
   const handleSend = () => {
     if (input.trim() && !disabled && !isRunning) {
-      onSend(input.trim())
+      onSend(input.trim(), model, permission)
       setInput('')
     }
   }

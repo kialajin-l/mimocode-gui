@@ -2,9 +2,14 @@ import { useEffect } from 'react'
 import { useSessionStore } from '../stores/sessionStore'
 
 let togglePanelCallback: (() => void) | null | undefined = undefined
+let searchOpenCallback: (() => void) | null | undefined = undefined
 
 export function setTogglePanelCallback(cb: (() => void) | null) {
   togglePanelCallback = cb
+}
+
+export function setSearchOpenCallback(cb: (() => void) | null) {
+  searchOpenCallback = cb
 }
 
 export function useKeyboardShortcuts() {
@@ -19,6 +24,10 @@ export function useKeyboardShortcuts() {
           case 'b':
             e.preventDefault()
             togglePanelCallback?.()
+            break
+          case 'k':
+            e.preventDefault()
+            searchOpenCallback?.()
             break
         }
       }

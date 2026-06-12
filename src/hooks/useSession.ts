@@ -4,25 +4,22 @@ import { Message } from '../types/session'
 import { parseDiff } from '../utils/diffParser'
 
 export function useSession() {
-  const store = useSessionStore()
-  const {
-    sessions,
-    activeSessionId,
-    projects,
-    createSession,
-    deleteSession,
-    setActiveSession,
-    addMessage,
-    updateSession,
-    createProject,
-    deleteProject
-  } = store
+  const sessions = useSessionStore(s => s.sessions)
+  const activeSessionId = useSessionStore(s => s.activeSessionId)
+  const projects = useSessionStore(s => s.projects)
+  const createSession = useSessionStore(s => s.createSession)
+  const deleteSession = useSessionStore(s => s.deleteSession)
+  const setActiveSession = useSessionStore(s => s.setActiveSession)
+  const addMessage = useSessionStore(s => s.addMessage)
+  const updateSession = useSessionStore(s => s.updateSession)
+  const createProject = useSessionStore(s => s.createProject)
+  const deleteProject = useSessionStore(s => s.deleteProject)
 
   const activeSession = sessions.find((s) => s.id === activeSessionId)
   const activeSessionIdRef = useRef(activeSessionId)
   activeSessionIdRef.current = activeSessionId
 
-  const sendMessage = useCallback(async (content: string) => {
+  const sendMessage = useCallback(async (content: string, model?: string, permission?: string) => {
     const sessionId = activeSessionIdRef.current
     if (!sessionId) return
 
@@ -76,7 +73,7 @@ export function useSession() {
 
     try {
       api.onMessageChunk(sessionId, handleChunk)
-      const result = await api.sendMessage(sessionId, content)
+      const result = await api.sendMessage(sessionId, content, undefined, model, permission)
       api.removeMessageChunkListener(sessionId)
 
       if (result?.success && result.content) {

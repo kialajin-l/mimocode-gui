@@ -7,7 +7,7 @@ interface MessageChunk {
 
 interface ElectronAPI {
   // Chat
-  sendMessage: (sessionId: string, message: string, cwd?: string) => Promise<{
+  sendMessage: (sessionId: string, message: string, cwd?: string, model?: string, permission?: string) => Promise<{
     success: boolean
     content?: string
     error?: string
@@ -35,6 +35,8 @@ interface ElectronAPI {
   // Git
   gitDiff: (cwd?: string) => Promise<{ success: boolean; diff: string; error?: string }>
   gitDiffStat: (cwd?: string) => Promise<{ success: boolean; stat: string; error?: string }>
+  gitAccept: (file: string, cwd?: string) => Promise<{ success: boolean; error?: string }>
+  gitReject: (file: string, cwd?: string) => Promise<{ success: boolean; error?: string }>
 }
 
 declare global {

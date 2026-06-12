@@ -67,7 +67,7 @@ function TerminalPanel() {
       setLines(prev => [...prev, { type: 'output', content: data }])
     })
 
-    api.onTerminalExit(id, (code) => {
+    const cleanupExit = api.onTerminalExit(id, (code) => {
       setIsRunning(false)
       if (code !== 0 && code !== null) {
         setLines(prev => [...prev, { type: 'exit', content: `Process exited with code ${code}` }])
@@ -75,6 +75,7 @@ function TerminalPanel() {
     })
 
     return () => {
+      cleanupExit()
       api.removeTerminalListeners(id)
     }
   }, [])

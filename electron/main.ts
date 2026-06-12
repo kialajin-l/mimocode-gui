@@ -1,7 +1,7 @@
 import { app, BrowserWindow, ipcMain } from 'electron'
 import path from 'path'
 import fs from 'fs'
-import { spawn, ChildProcess } from 'child_process'
+import { spawn, execSync, ChildProcess } from 'child_process'
 import { sendMessage, cancelMessage, getMimoPath, stopAllProcesses } from './cli-bridge'
 
 const DATA_DIR = app.getPath('userData')
@@ -44,12 +44,14 @@ async function createWindow() {
   })
 }
 
-ipcMain.handle('send-message', async (_, sessionId: string, message: string, cwd?: string) => {
+ipcMain.handle('send-message', async (_, sessionId: string, message: string, cwd?: string, model?: string, permission?: string) => {
   try {
     return await new Promise((resolve) => {
       sendMessage(message, {
         sessionId,
         cwd,
+        model,
+        permission,
         onChunk: (chunk) => {
           try {
             mainWindow?.webContents.send('message-chunk', sessionId, chunk)
@@ -173,9 +175,9 @@ ipcMain.handle('terminal-kill', (_, id: string) => {
 // Git diff detection
 ipcMain.handle('git-diff', async (_, cwd?: string) => {
   try {
-    const { execSync } = require('child_process')
+    const { execFileSync } = require('child_process')
     const dir = cwd || process.cwd()
-    const diff = execSync('git diff', { cwd: dir, encoding: 'utf-8', timeout: 5000 })
+    const diff = execFileSync('git', ['diff'], { cwd: dir, encoding: 'utf-8', timeout: 5000 })
     return { success: true, diff }
   } catch (err) {
     return { success: false, diff: '', error: String(err) }
@@ -184,12 +186,34 @@ ipcMain.handle('git-diff', async (_, cwd?: string) => {
 
 ipcMain.handle('git-diff-stat', async (_, cwd?: string) => {
   try {
-    const { execSync } = require('child_process')
+    const { execFileSync } = require('child_process')
     const dir = cwd || process.cwd()
-    const stat = execSync('git diff --stat', { cwd: dir, encoding: 'utf-8', timeout: 5000 })
+    const stat = execFileSync('git', ['diff', '--stat'], { cwd: dir, encoding: 'utf-8', timeout: 5000 })
     return { success: true, stat }
   } catch (err) {
     return { success: false, stat: '', error: String(err) }
+  }
+})
+
+ipcMain.handle('git-accept', async (_, file: string, cwd?: string) => {
+  try {
+    const { execFileSync } = require('child_process')
+    const dir = cwd || process.cwd()
+    execFileSync('git', ['add', file], { cwd: dir, timeout: 5000 })
+    return { success: true }
+  } catch (err) {
+    return { success: false, error: String(err) }
+  }
+})
+
+ipcMain.handle('git-reject', async (_, file: string, cwd?: string) => {
+  try {
+    const { execFileSync } = require('child_process')
+    const dir = cwd || process.cwd()
+    execFileSync('git', ['checkout', 'HEAD', '--', file], { cwd: dir, timeout: 5000 })
+    return { success: true }
+  } catch (err) {
+    return { success: false, error: String(err) }
   }
 })
 

@@ -1,19 +1,24 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { ThemeSwitcher } from './components/Settings/ThemeSwitcher'
 import { SessionList } from './components/Sidebar/SessionList'
 import { MessageList } from './components/Chat/MessageList'
 import { MessageInput } from './components/Chat/MessageInput'
 import { RightPanel } from './components/Panel/RightPanel'
+import { SearchBar } from './components/Search/SearchBar'
 import { useSession } from './hooks/useSession'
-import { useKeyboardShortcuts, setTogglePanelCallback } from './hooks/useKeyboardShortcuts'
+import { useKeyboardShortcuts, setTogglePanelCallback, setSearchOpenCallback } from './hooks/useKeyboardShortcuts'
 import { useSessionStore } from './stores/sessionStore'
+import { parseDiff } from './utils/diffParser'
 import './App.css'
 
 function App() {
-  const { activeSession, sendMessage, cancelMessage } = useSession()
+  const { activeSession, sendMessage, cancelMessage, updateSession } = useSession()
   const loadData = useSessionStore(s => s.loadData)
+  const sessions = useSessionStore(s => s.sessions)
   const [panelOpen, setPanelOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
   useKeyboardShortcuts()
 
   const togglePanel = useCallback(() => {
@@ -22,8 +27,59 @@ function App() {
 
   useEffect(() => {
     setTogglePanelCallback(togglePanel)
-    return () => setTogglePanelCallback(null)
+    setSearchOpenCallback(() => setSearchOpen(true))
+    return () => {
+      setTogglePanelCallback(null)
+      setSearchOpenCallback(null)
+    }
   }, [togglePanel])
+
+  const searchResults = useMemo(() => {
+    if (!searchQuery.trim()) return []
+    const query = searchQuery.toLowerCase()
+    return sessions.filter(s =>
+      s.name.toLowerCase().includes(query) ||
+      s.messages.some(m => m.content.toLowerCase().includes(query))
+    ).flatMap(s => {
+      const matchingMessages = s.messages.filter(m =>
+        m.content.toLowerCase().includes(query)
+      )
+      return [
+        { type: 'session' as const, session: s },
+        ...matchingMessages.map(m => ({ type: 'message' as const, session: s, message: m }))
+      ]
+    })
+  }, [searchQuery, sessions])
+
+  const refreshChanges = useCallback(async () => {
+    if (!activeSession) return
+    const api = window.electronAPI
+    if (!api) return
+    try {
+      const result = await api.gitDiff(activeSession.cwd || '.')
+      if (result?.success && result.diff) {
+        updateSession(activeSession.id, { changes: parseDiff(result.diff) })
+      } else {
+        updateSession(activeSession.id, { changes: [] })
+      }
+    } catch (e) {
+      console.error('[App] refreshChanges error:', e)
+    }
+  }, [activeSession, updateSession])
+
+  const handleAcceptChange = useCallback(async (file: string) => {
+    const api = window.electronAPI
+    if (!api || !activeSession) return
+    await api.gitAccept(file, activeSession.cwd || '.')
+    refreshChanges()
+  }, [activeSession, refreshChanges])
+
+  const handleRejectChange = useCallback(async (file: string) => {
+    const api = window.electronAPI
+    if (!api || !activeSession) return
+    await api.gitReject(file, activeSession.cwd || '.')
+    refreshChanges()
+  }, [activeSession, refreshChanges])
 
   useEffect(() => {
     loadData()
@@ -32,6 +88,17 @@ function App() {
   return (
     <ErrorBoundary>
       <div className="app">
+        {searchOpen && (
+          <SearchBar
+            query={searchQuery}
+            results={searchResults}
+            onQueryChange={setSearchQuery}
+            onClose={() => {
+              setSearchOpen(false)
+              setSearchQuery('')
+            }}
+          />
+        )}
         <div className="title-bar">
           <div className="title-bar-left">
             <span>快速对话</span>
@@ -137,6 +204,8 @@ function App() {
           <RightPanel
             open={panelOpen}
             changes={activeSession?.changes || []}
+            onAcceptChange={handleAcceptChange}
+            onRejectChange={handleRejectChange}
           />
         </div>
       </div>

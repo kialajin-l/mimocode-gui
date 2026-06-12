@@ -12,8 +12,8 @@ function safeInvoke(channel: string, ...args: any[]): Promise<any> {
 
 contextBridge.exposeInMainWorld('electronAPI', {
   // Chat messaging
-  sendMessage: (sessionId: string, message: string, cwd?: string) =>
-    safeInvoke('send-message', sessionId, message, cwd),
+  sendMessage: (sessionId: string, message: string, cwd?: string, model?: string, permission?: string) =>
+    safeInvoke('send-message', sessionId, message, cwd, model, permission),
 
   cancelMessage: (sessionId: string) =>
     safeInvoke('cancel-message', sessionId),
@@ -81,5 +81,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Git operations
   gitDiff: (cwd?: string) => safeInvoke('git-diff', cwd),
-  gitDiffStat: (cwd?: string) => safeInvoke('git-diff-stat', cwd)
+  gitDiffStat: (cwd?: string) => safeInvoke('git-diff-stat', cwd),
+  gitAccept: (file: string, cwd?: string) => safeInvoke('git-accept', file, cwd),
+  gitReject: (file: string, cwd?: string) => safeInvoke('git-reject', file, cwd),
+  gitStageFile: (file: string, cwd?: string) => safeInvoke('git-stage-file', file, cwd),
+  gitDiscardChanges: (file: string, cwd?: string) => safeInvoke('git-discard-changes', file, cwd),
+  gitDiffFiles: (cwd?: string) => safeInvoke('git-diff-files', cwd)
 })
