@@ -18,6 +18,28 @@ interface SessionState {
 
 let saveTimer: ReturnType<typeof setTimeout> | null = null
 
+function reviveDates(data: any) {
+  if (!data) return data
+  if (data.sessions) {
+    data.sessions = data.sessions.map((s: any) => ({
+      ...s,
+      createdAt: new Date(s.createdAt),
+      updatedAt: new Date(s.updatedAt),
+      messages: (s.messages || []).map((m: any) => ({
+        ...m,
+        timestamp: new Date(m.timestamp)
+      }))
+    }))
+  }
+  if (data.projects) {
+    data.projects = data.projects.map((p: any) => ({
+      ...p,
+      createdAt: new Date(p.createdAt)
+    }))
+  }
+  return data
+}
+
 function scheduleSave() {
   if (saveTimer) clearTimeout(saveTimer)
   saveTimer = setTimeout(() => {
@@ -42,6 +64,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       try {
         const data = await api.loadData()
         if (data) {
+          reviveDates(data)
           set({
             sessions: data.sessions || [],
             projects: data.projects || [],
