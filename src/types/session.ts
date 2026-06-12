@@ -16,6 +16,13 @@ export interface Project {
 
 export const PROJECT_COLORS = ['#7c3aed', '#0ea5e9', '#22c55e', '#ef4444', '#eab308', '#ec4899'] as const
 
+export interface SessionVersion {
+  id: string
+  timestamp: Date
+  messages: Message[]
+  label: string
+}
+
 export interface Session {
   id: string
   name: string
@@ -23,6 +30,7 @@ export interface Session {
   status: 'running' | 'idle' | 'error'
   cwd: string
   messages: Message[]
+  versions: SessionVersion[]
   projectId: string | null
   changes: FileChange[]
   createdAt: Date

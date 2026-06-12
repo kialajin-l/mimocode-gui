@@ -21,6 +21,21 @@
   --transition-speed: 140ms;
 }
 
+[data-theme="light"] {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8f9fa;
+  --bg-tertiary: #e9ecef;
+  --bg-hover: #e2e6ea;
+  --text-primary: #1a1a2e;
+  --text-secondary: #555566;
+  --text-tertiary: #8888a0;
+  --accent-color: #7c3aed;
+  --accent-hover: #6d28d9;
+  --border-color: #dee2e6;
+  --success-color: #16a34a;
+  --error-color: #dc2626;
+}
+
 html, body {
   height: 100%;
   overflow: hidden;
@@ -923,6 +938,62 @@ html, body {
   font-size: 12.5px;
   line-height: 1.6;
   overflow-x: auto;
+}
+
+/* Code block component */
+.code-block {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  margin: 10px 0;
+  overflow: hidden;
+}
+
+.code-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 14px;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.code-block-lang {
+  font-size: 11.5px;
+  color: var(--text-tertiary);
+}
+
+.code-block-copy {
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  transition: all var(--transition-speed);
+  font-family: inherit;
+}
+
+.code-block-copy:hover {
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+}
+
+.code-block-pre {
+  margin: 0;
+  padding: 14px;
+  overflow-x: auto;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  background: transparent;
+}
+
+.code-block-pre code {
+  font-family: inherit;
+  font-size: inherit;
 }
 
 .message-text ul,
@@ -1918,4 +1989,145 @@ html, body {
 
 .workflow-run-step-btn:hover {
   background: #8b5cf6;
+}
+
+/* Code Block */
+.code-block {
+  border-radius: 10px;
+  overflow: hidden;
+  margin: 10px 0;
+  border: 1px solid var(--border-color);
+  background: var(--bg-primary);
+}
+
+.code-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.code-block-lang {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  text-transform: lowercase;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+.code-block-copy {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  font-size: 11px;
+  font-family: inherit;
+  transition: all var(--transition-speed);
+}
+
+.code-block-copy:hover {
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+}
+
+.code-block-copy.copied {
+  color: var(--success-color);
+}
+
+.code-block-pre {
+  margin: 0;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 0;
+  overflow-x: auto;
+}
+
+.code-block-pre code {
+  display: block;
+  padding: 14px;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  background: none;
+  border: none;
+  border-radius: 0;
+}
+
+/* highlight.js theme — custom dark palette matching app design */
+.hljs {
+  color: var(--text-secondary);
+  background: var(--bg-primary);
+}
+
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-literal,
+.hljs-section,
+.hljs-link {
+  color: #c792ea;
+}
+
+.hljs-function .hljs-keyword {
+  color: #82aaff;
+}
+
+.hljs-subst {
+  color: var(--text-secondary);
+}
+
+.hljs-string,
+.hljs-title,
+.hljs-name,
+.hljs-type,
+.hljs-attribute,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition,
+.hljs-variable,
+.hljs-template-tag,
+.hljs-template-variable {
+  color: #c3e88d;
+}
+
+.hljs-comment,
+.hljs-quote,
+.hljs-deletion,
+.hljs-meta {
+  color: #546e7a;
+}
+
+.hljs-number,
+.hljs-regexp,
+.hljs-literal,
+.hljs-params {
+  color: #f78c6c;
+}
+
+.hljs-built_in {
+  color: #ffcb6b;
+}
+
+.hljs-title.function_ {
+  color: #82aaff;
+}
+
+.hljs-class .hljs-title {
+  color: #ffcb6b;
+}
+
+.hljs-attr {
+  color: #ffcb6b;
+}
+
+.hljs-params {
+  color: #89ddff;
 }

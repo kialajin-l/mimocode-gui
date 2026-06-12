@@ -89,6 +89,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       status: 'idle',
       cwd,
       messages: [],
+      versions: [],
       projectId: projectId || null,
       changes: [],
       createdAt: new Date(),
