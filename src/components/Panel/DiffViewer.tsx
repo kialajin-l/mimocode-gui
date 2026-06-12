@@ -2,9 +2,11 @@ import { FileChange } from '../../utils/diffParser'
 
 interface DiffViewerProps {
   changes: FileChange[]
+  onAccept?: (file: string) => void
+  onReject?: (file: string) => void
 }
 
-export function DiffViewer({ changes }: DiffViewerProps) {
+export function DiffViewer({ changes, onAccept, onReject }: DiffViewerProps) {
   if (changes.length === 0) {
     return (
       <div className="review-empty">
@@ -29,9 +31,34 @@ export function DiffViewer({ changes }: DiffViewerProps) {
               </span>
               <span className="file-path">{change.file}</span>
             </div>
-            <div className="diff-stats">
-              <span className="diff-added">+{change.additions}</span>
-              <span className="diff-removed">-{change.deletions}</span>
+            <div className="diff-actions">
+              <div className="diff-stats">
+                <span className="diff-added">+{change.additions}</span>
+                <span className="diff-removed">-{change.deletions}</span>
+              </div>
+              {onAccept && (
+                <button
+                  className="diff-accept-btn"
+                  onClick={() => onAccept(change.file)}
+                  title="接受更改"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </button>
+              )}
+              {onReject && (
+                <button
+                  className="diff-reject-btn"
+                  onClick={() => onReject(change.file)}
+                  title="拒绝更改"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              )}
             </div>
           </div>
           <div className="diff-content">

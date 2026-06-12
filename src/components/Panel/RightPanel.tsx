@@ -6,9 +6,11 @@ interface RightPanelProps {
   open: boolean
   onToggle: () => void
   changes: FileChange[]
+  onAcceptChange?: (file: string) => void
+  onRejectChange?: (file: string) => void
 }
 
-export function RightPanel({ open, changes }: RightPanelProps) {
+export function RightPanel({ open, changes, onAcceptChange, onRejectChange }: RightPanelProps) {
   const [activeTab, setActiveTab] = useState<'review' | 'terminal'>('review')
 
   return (
@@ -29,7 +31,13 @@ export function RightPanel({ open, changes }: RightPanelProps) {
       </div>
 
       <div className="panel-content">
-        {activeTab === 'review' && <DiffViewer changes={changes} />}
+        {activeTab === 'review' && (
+          <DiffViewer
+            changes={changes}
+            onAccept={onAcceptChange}
+            onReject={onRejectChange}
+          />
+        )}
         {activeTab === 'terminal' && <TerminalPanel />}
       </div>
     </aside>
