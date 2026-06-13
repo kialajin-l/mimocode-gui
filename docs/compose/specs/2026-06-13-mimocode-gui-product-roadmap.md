@@ -1,7 +1,7 @@
 # MiMoCode GUI 产品路线规划设计
 
 > 日期: 2026-06-13  
-> 状态: 修订草案  
+> 状态: 修订版 v2  
 > 适用范围: MiMoCode GUI 后续产品、架构、UI 改造路线  
 > 参考来源: 当前 `mimocode-gui` 代码审查、MiMo Code 源码能力梳理、本机 MiMo 能力摸底反馈
 
@@ -9,7 +9,7 @@
 
 当前 `mimocode-gui` 已具备 Electron + React + Zustand 的桌面应用雏形，包括会话列表、聊天区、右侧审查面板、主题切换、终端面板和基础 MiMo CLI 调用。但当前实现本质上仍是一个包装 `mimo run` 的聊天壳，无法充分承接 MiMo Code / OpenCode 的完整交互能力。
 
-初版路线曾假设 `mimo serve` 提供可外部调用的 REST API、SDK 和 event stream。摸底后需要修正：`mimo serve` 实际提供的是 OpenCode Web UI SPA，所有路径返回同一个前端 HTML；结构化事件和 bus 系统存在于内部，但未作为稳定外部 REST/event API 暴露。因此，路线不能再以“自研 `mimoClient` 对接 REST/SDK”作为主线。
+初版路线曾假设 `mimo serve` 提供可外部调用的 REST API、SDK 和 event stream。摸底后需要修正：`mimo serve` 实际提供的是 OpenCode Web UI SPA，所有路径返回同一个前端 HTML；结构化事件和 bus 系统存在于内部，但未作为稳定外部 REST/event API 暴露。因此，路线不能再以"自研 `mimoClient` 对接 REST/SDK"作为主线。
 
 修订后的现实路线是：
 
@@ -18,18 +18,19 @@
 3. 以嵌入 OpenCode Web UI 作为主交互路径，快速获得成熟的 session、tool、diff、terminal、theme 等体验。
 4. 继续摸底 `mimo acp`。如果 ACP 可用，用它获取结构化事件和控制能力。
 5. 如果 ACP 不可用，则通过 `mimo export`、`mimo session list --format json`、SQLite 和 memory 文件轮询，为右侧定制面板提供数据。
-6. 将 GUI 的差异化价值放在 OpenCode Web UI 未覆盖或不适合覆盖的部分：写作工作台、章节/角色/世界观管理、定制审查面板、本地窗口体验和项目启动器。
+6. 将 GUI 的差异化价值放在 OpenCode Web UI 未覆盖或不适合覆盖的部分：定制审查面板、项目上下文管理、本地窗口体验和项目启动器。
 
 ## 2. 产品定位
 
 MiMoCode GUI 不应重复实现 OpenCode Web UI 已经做好的完整交互，也不应停留在简单 CLI stdout wrapper。它的定位应调整为：
 
-> 一个面向 MiMo/OpenCode 的桌面工作台：主交互区复用成熟 Web UI，侧边和右侧面板承载本项目专属的审查、上下文、写作和本地桌面能力。
+> 一个面向 MiMo/OpenCode 的编程桌面工作台：主交互区复用成熟 Web UI，侧边和右侧面板承载本项目专属的审查、上下文管理和本地桌面能力。
 
-它需要支持两类核心用户：
+核心用户：
 
-- 开发者：使用 MiMo 完成代码阅读、修改、命令执行、diff 审查和长期任务。
-- 写作者：使用 MiMo 管理小说、剧本、设定集、长文本上下文和多轮修订。
+- **开发者**：使用 MiMo 完成代码阅读、修改、命令执行、diff 审查和长期任务。
+- **项目维护者**：管理项目上下文、memory、checkpoint、task，跟踪长期变更。
+- **技术工作流用户**：使用自动化工作流、插件系统、Git 集成提升开发效率。
 
 ## 3. 已确认事实
 
@@ -61,9 +62,9 @@ OpenCode Web UI 已经覆盖大量桌面工作台能力。GUI 不应在第一阶
 
 当前 preload 暴露了任意文件读取、任意命令执行和直接 Git checkout 风险。该问题必须在 Phase 0 收敛，不能等到 Web UI 嵌入后再处理。嵌入的 Web UI 不应能访问外层 `window.electronAPI` 的高危能力。
 
-### 4.5 写作场景是一等公民
+### 4.5 技术工作流差异化
 
-这个 GUI 的差异化价值不只在代码开发。章节结构、角色数据库、世界观设定、叙事连续性、长文本修订应作为后续面板设计的重要方向。
+GUI 的差异化价值在于 OpenCode Web UI 未覆盖的能力：Git 状态/diff/review inspector、项目上下文管理、本地桌面体验、工作流自动化和项目启动器。
 
 ## 5. 目标场景
 
@@ -75,13 +76,12 @@ OpenCode Web UI 已经覆盖大量桌面工作台能力。GUI 不应在第一阶
 4. GUI 右侧面板显示定制审查信息、Git 状态、当前项目上下文。
 5. 高风险本地操作通过 GUI 的安全 IPC 和确认流执行。
 
-### 5.2 写作场景
+### 5.2 项目维护场景
 
-1. 用户打开小说或长文本项目。
-2. 主区域仍可使用 MiMo Web UI 进行对话和创作。
-3. 右侧切换为写作 inspector：Outline、Characters、World、Continuity、Revisions。
-4. GUI 从本地文件、memory、导出的 session 或用户维护的结构化文档中生成写作上下文。
-5. 用户可以围绕章节、角色、设定和修订队列继续向 MiMo 提问。
+1. 用户打开已有项目，GUI 自动加载项目上下文（memory、checkpoint、task）。
+2. 右侧面板显示项目健康状态、待处理变更、最近活动摘要。
+3. 用户通过 Inspector 查看和管理项目上下文。
+4. 自动化工作流辅助代码审查、bug 修复、文档更新等重复任务。
 
 ## 6. 推荐架构
 
@@ -116,7 +116,6 @@ Electron Main
   └─ GUI Settings Store
       ├─ recent projects
       ├─ layout state
-      ├─ project type
       ├─ theme preference
       └─ window preferences
 
@@ -125,8 +124,7 @@ Renderer
   ├─ Project Sidebar
   ├─ Embedded OpenCode Web UI
   ├─ Right Inspector
-  │   ├─ Code mode: Changes / Context / Review
-  │   └─ Writing mode: Outline / Characters / World / Continuity / Revisions
+  │   └─ Changes / Context / Review / Terminal
   └─ Settings / Diagnostics
 ```
 
@@ -142,7 +140,7 @@ GUI 负责：
 - 本地项目入口和窗口体验。
 - 安全 IPC。
 - 定制 inspector 数据整合。
-- 写作场景的结构化面板。
+- 项目上下文管理。
 
 ## 7. 路线分支
 
@@ -174,13 +172,12 @@ Embedded Web UI + CLI export/session list + SQLite/memory read-only polling
 - 会话列表和历史摘要。
 - 最近 session export 后的消息/工具信息展示。
 - memory、checkpoint、task 文件视图。
-- 写作项目的结构化索引。
 
 路线 B 实时性较弱，但实现风险更低。
 
 ## 8. 功能路线
 
-### Phase 0: 稳定性修复
+### Phase 0: 稳定性修复 ✅ 已完成
 
 目标：先消除当前 GUI 会导致核心工作流错误、数据丢失或本机安全风险的问题。
 
@@ -201,7 +198,7 @@ Embedded Web UI + CLI export/session list + SQLite/memory read-only polling
 - 保存 plugin 或 UI 设置不会覆盖 session 数据。
 - Renderer 不能直接触发任意文件读取、任意 shell 命令或未确认的 Git 回滚。
 
-### Phase 1: Web UI 嵌入 MVP 与 ACP 摸底
+### Phase 1: Web UI 嵌入 MVP 与 ACP 摸底 ✅ 已完成
 
 目标：把主交互区切换为成熟的 OpenCode Web UI，而不是继续复制完整聊天工作台。
 
@@ -222,7 +219,7 @@ Embedded Web UI + CLI export/session list + SQLite/memory read-only polling
 - GUI 能清晰显示 MiMo runtime 状态。
 - 文档化 ACP 是否可用于后续 inspector 数据源。
 
-### Phase 2: 数据适配决策
+### Phase 2: 数据适配决策 ✅ 已完成
 
 目标：决定右侧定制面板的数据来源。
 
@@ -237,25 +234,15 @@ Embedded Web UI + CLI export/session list + SQLite/memory read-only polling
 - 文档化选择路线 A 或路线 B。
 - 右侧 inspector 至少能显示当前项目的 session 或 memory 基础信息。
 
-### Phase 3: 精简右侧 Inspector
+### Phase 3: 精简右侧 Inspector ✅ 已完成
 
 目标：围绕嵌入 Web UI 做一个最小可用的增量 inspector，而不是重写主交互或一次性实现全部面板。
 
-Phase 3 必须二选一：先做代码模式 inspector，或先做写作模式 inspector。不能同时承诺两套完整面板。
-
-代码项目模式候选范围：
+实现范围（代码模式）：
 
 - `Changes`：当前 Git 状态、diff 摘要、审查入口。
 - `Context`：memory、checkpoint、tasks、attached/project files 摘要。
 - `Review`：本地 review checklist、风险项、待处理变更。
-
-写作项目模式候选范围：
-
-- `Outline`：章节和场景结构。
-- `Characters`：角色卡和关系。
-- `World`：世界观、地点、组织、规则。
-- `Continuity`：时间线、伏笔、一致性问题。
-- `Revisions`：待修订段落和版本对比。
 
 验收标准：
 
@@ -263,7 +250,7 @@ Phase 3 必须二选一：先做代码模式 inspector，或先做写作模式 i
 - 右侧面板不阻塞 Web UI 使用。
 - 未实现的 inspector tab 不显示为可用功能。
 
-### Phase 4: 安全审查与本地操作深化
+### Phase 4: 安全审查与本地操作深化 ✅ 已完成
 
 目标：在 Phase 0 已完成高危 IPC 收敛的基础上，将本地审查和写操作做成明确、可确认、可审计的产品能力。
 
@@ -279,23 +266,21 @@ Phase 3 必须二选一：先做代码模式 inspector，或先做写作模式 i
 - Renderer 无法直接传入任意路径执行 destructive 操作。
 - 所有本地写操作都有明确来源和用户动作。
 
-### Phase 5: 写作工作台深化
+### Phase 5: 已暂停 ⏸️
 
-目标：形成区别于 OpenCode Web UI 的专属产品价值。
+> **状态：暂停，不进入当前产品路线。**
 
-范围按面板逐个交付，每个面板单独写 spec / plan，不在一个阶段内一次性实现全部能力：
+原计划为"写作工作台深化"，包括章节树、角色数据库、世界观设定、写作一致性检查等。经产品方向修订，这些功能与编程桌面工作台定位不符，已从路线图中移除。
 
-- 章节树和场景卡片。
-- 角色/组织/地点数据库。
-- 设定一致性检查。
-- 长文本摘要和章节级 checkpoint。
-- 与 MiMo memory 文件的导入/导出或同步。
-- 将选中的章节/角色/设定作为 prompt 附件或上下文片段。
+**替代方向（待评估，不承诺实现）：**
 
-验收标准：
+- Project Workflow Workbench：项目级工作流编排和自动化。
+- Code Review Automation：AI 辅助代码审查流程。
+- Task/Memory Inspector：项目任务和 memory 的深度查看。
+- GitHub/CI Integration：与 GitHub Issues、PR、CI 状态集成。
+- Local Runtime Diagnostics：本地运行时状态监控和诊断。
 
-- 每次只交付一个写作面板的完整闭环。
-- 已交付面板的上下文可以被稳定复用到 MiMo 对话中。
+这些方向需要独立评估 ROI，不在当前 Phase 5 范围内承诺。
 
 ## 9. UI 方向
 
@@ -306,7 +291,6 @@ Phase 3 必须二选一：先做代码模式 inspector，或先做写作模式 i
 ### 9.2 左侧 Sidebar
 
 - 最近项目。
-- 项目类型：Code / Writing。
 - runtime 状态。
 - 快速打开项目。
 - 诊断入口。
@@ -317,7 +301,7 @@ Phase 3 必须二选一：先做代码模式 inspector，或先做写作模式 i
 
 ### 9.4 右侧 Inspector
 
-右侧是 GUI 的差异化区域。代码项目和写作项目应使用不同 tab 组合。
+右侧是 GUI 的差异化区域。专注于代码审查、项目上下文和运行时状态。
 
 ### 9.5 视觉语言
 
@@ -339,7 +323,6 @@ electron/
 src/
   components/WebUiHost/
   components/Inspector/
-  components/Writing/
   stores/workspaceStore.ts
   stores/runtimeStore.ts
   stores/uiPreferenceStore.ts
@@ -382,49 +365,49 @@ src/
 
 完整复制 Codex Desktop / OpenCode Web UI 是团队级工作，不适合作为单人短期路线。当前路线应按薄片交付：
 
-| 阶段 | 现实工作量 | 说明 |
-| --- | --- | --- |
-| Phase 0 | 1-2 天 | 修复当前高危问题 |
-| Phase 1 | 2-4 天 | 嵌入 Web UI、runtime 状态，并行摸底 ACP |
-| Phase 2 | 1-2 天 | ACP/CLI/SQLite 数据路线确认和复用评估 |
-| Phase 3 | 3-7 天 | 一个精简 inspector 模式，代码或写作二选一 |
-| Phase 5 | 每个面板 1-2 周 | 每个写作能力单独设计和实现 |
+| 阶段      | 现实工作量 | 说明                                     |
+| ------- | ----- | -------------------------------------- |
+| Phase 0 | 1-2 天 | 修复当前高危问题                               |
+| Phase 1 | 2-4 天 | 嵌入 Web UI、runtime 状态，并行摸底 ACP          |
+| Phase 2 | 1-2 天 | ACP/CLI/SQLite 数据路线确认和复用评估             |
+| Phase 3 | 3-7 天 | 代码模式 inspector（Changes/Context/Review） |
+| Phase 4 | 2-3 天 | 安全加固和本地操作确认流                           |
+| Phase 5 | —     | 已暂停                                    |
 
 任何超过一周的阶段都应拆成更小的 spec 和 plan。
 
 ## 12. 风险与缓解
 
-| 风险 | 影响 | 缓解 |
-| --- | --- | --- |
-| iframe/webview 被认为只是薄皮 wrapper | 产品差异化不足 | 将差异化放在写作和审查 inspector，而不是重写 Web UI |
-| ACP 不可用 | 无法实时获取结构化事件 | 使用 CLI export、session list、SQLite 和 memory 文件作为 fallback |
-| 直接读 SQLite 破坏数据 | 数据损坏 | 只读访问，不写库；写操作优先通过 MiMo CLI/Web UI |
-| Web UI 与外层 GUI 状态不同步 | UX 混乱 | 外层只显示辅助面板，不抢主流程控制权 |
-| IPC 权限过宽 | 本机命令执行、文件泄露、误删修改 | Phase 0 完成安全 IPC 收敛、路径校验和确认流 |
-| 过早自研完整主交互 | 返工大、进度失控 | 主交互先嵌入 Web UI，后续按 ACP 能力决定是否替换 |
-| 写作面板一次性铺太多 | 多个半成品，无闭环价值 | Phase 3 二选一，Phase 5 每次只做一个写作面板 |
+| 风险                             | 影响               | 缓解                                                       |
+| ------------------------------ | ---------------- | -------------------------------------------------------- |
+| iframe/webview 被认为只是薄皮 wrapper | 产品差异化不足          | 将差异化放在审查 inspector 和本地桌面能力，而不是重写 Web UI                  |
+| ACP 不可用                        | 无法实时获取结构化事件      | 使用 CLI export、session list、SQLite 和 memory 文件作为 fallback |
+| 直接读 SQLite 破坏数据                | 数据损坏             | 只读访问，不写库；写操作优先通过 MiMo CLI/Web UI                         |
+| Web UI 与外层 GUI 状态不同步           | UX 混乱            | 外层只显示辅助面板，不抢主流程控制权                                       |
+| IPC 权限过宽                       | 本机命令执行、文件泄露、误删修改 | Phase 0 完成安全 IPC 收敛、路径校验和确认流                             |
+| 过早自研完整主交互                      | 返工大、进度失控         | 主交互先嵌入 Web UI，后续按 ACP 能力决定是否替换                           |
 
 ## 13. 里程碑建议
 
-### M0: 当前版本稳定
+### M0: 当前版本稳定 ✅
 
 输出：修复 cwd、持久化覆盖、IPC 过宽和测试脚本。
 
-### M1: Embedded Web UI MVP
+### M1: Embedded Web UI MVP ✅
 
 输出：GUI 能启动/连接 `mimo serve` 并嵌入 OpenCode Web UI，同时完成 ACP 能力摸底记录。
 
-### M2: Data Adapter Decision
+### M2: Data Adapter Decision ✅
 
 输出：确认 ACP 可用性；如果不可用，完成 CLI/SQLite/memory read-only 数据方案，并完成 `codex-workflow` executor 复用评估。
 
-### M3: Inspector MVP
+### M3: Inspector MVP ✅
 
-输出：代码模式或写作模式中至少一个 inspector 可用。
+输出：代码模式 inspector 可用（Changes/Context/Review）。
 
-### M4: Writing Workbench MVP
+### M4: 待定
 
-输出：章节、角色、世界观或修订队列中的一个完整闭环。
+根据 Phase 5 候选方向的 ROI 评估结果决定。
 
 ## 14. 非目标
 
@@ -436,6 +419,7 @@ src/
 - 自建独立 plugin/provider/MCP 管理系统。
 - 在未收敛 IPC 前开放任意 shell、任意文件读取、任意 Git 回滚。
 - 第一轮实现 Codex Desktop 级别完整三栏工作台。
+- 写作工作台功能（章节、角色、世界观等）。
 
 ## 15. 下一步建议
 
@@ -445,6 +429,10 @@ src/
 2. 在 Phase 0 内完成安全 IPC 收敛，确保嵌入 Web UI 前 renderer 没有裸高危能力。
 3. 实现 `mimo serve` 启动和 Web UI 嵌入，同时跑 `mimo acp --help` 并记录 ACP 能力。
 4. 根据 ACP 结果选择数据适配路线，并评估 `codex-workflow` executor 是否可复用。
-5. 先做一个最小右侧 inspector：代码审查或写作 Outline 二选一。
+5. 实现代码模式 inspector（Changes/Context/Review）。
 
-这样可以避免在不成立的 REST/SDK 假设上继续投入，同时利用 MiMo/OpenCode 已有 Web UI，把开发资源留给真正有差异化价值的桌面和写作能力。
+这样可以避免在不成立的 REST/SDK 假设上继续投入，同时利用 MiMo/OpenCode 已有 Web UI，把开发资源留给真正有差异化价值的桌面和技术工作流能力。
+
+---
+
+*文档修订完成 — 产品定位聚焦编程与技术工作项目，写作工作台已暂停。*
