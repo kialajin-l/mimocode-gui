@@ -165,6 +165,93 @@ function NativeSessionList() {
     setPreviewOpen(true)
   }
 
+  const handleContinue = async (sessionEntry: any) => {
+    const info = sessionEntry.info || sessionEntry
+    const detail = currentSessionDetail || info
+
+    const title = detail.title || info.name || info.id || '导入的会话'
+    const directory = detail.directory || info.path || ''
+
+    const nativeMessages = detail.messages || []
+    const messages = nativeMessages.map((msg: any) => {
+      const role = msg.role === 'human' ? 'user' : msg.role === 'ai' ? 'assistant' : msg.role
+      const textParts = (msg.parts || [])
+        .filter((p: any) => p.type === 'text')
+        .map((p: any) => p.content || '')
+        .join('\n')
+      return {
+        id: crypto.randomUUID(),
+        role: role as 'user' | 'assistant' | 'system',
+        content: textParts || msg.content || '',
+        timestamp: new Date(msg.timestamp || Date.now())
+      }
+    })
+
+    const imported = useSessionStore.getState().importSession({
+      name: title,
+      cwd: directory,
+      messages,
+      pid: null,
+      status: 'running',
+      versions: [],
+      projectId: null,
+      changes: [],
+      tags: []
+    })
+
+    clearSessionDetail()
+    setPreviewOpen(false)
+
+    const api = window.electronAPI
+    if (!api) {
+      useSessionStore.getState().addMessage(imported.id, {
+        id: crypto.randomUUID(),
+        role: 'system',
+        content: `已导入会话「${title}」，请继续对话。`,
+        timestamp: new Date()
+      })
+      useSessionStore.getState().updateSession(imported.id, { status: 'idle' })
+      return
+    }
+
+    const continuePrompt = `继续此会话: ${title}`
+    const userMsg = {
+      id: crypto.randomUUID(),
+      role: 'user' as const,
+      content: continuePrompt,
+      timestamp: new Date()
+    }
+    useSessionStore.getState().addMessage(imported.id, userMsg)
+
+    try {
+      const result = await api.sendMessage(imported.id, continuePrompt, directory || '.')
+      if (result?.success && result.content) {
+        useSessionStore.getState().addMessage(imported.id, {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: result.content,
+          timestamp: new Date()
+        })
+      } else if (result?.error) {
+        useSessionStore.getState().addMessage(imported.id, {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: `继续会话失败: ${result.error}`,
+          timestamp: new Date()
+        })
+      }
+    } catch (err) {
+      useSessionStore.getState().addMessage(imported.id, {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: `继续会话异常: ${(err as Error).message}`,
+        timestamp: new Date()
+      })
+    }
+
+    useSessionStore.getState().updateSession(imported.id, { status: 'idle' })
+  }
+
   const handleImport = (sessionEntry: any) => {
     const info = sessionEntry.info || sessionEntry
     const detail = currentSessionDetail || info
@@ -247,9 +334,8 @@ function NativeSessionList() {
                   导入到 GUI
                 </button>
                 <button
-                  className="native-session-btn disabled"
-                  disabled
-                  title="待接入 CLI 继续执行"
+                  className="native-session-btn continue"
+                  onClick={() => handleContinue(s)}
                 >
                   继续此会话
                 </button>

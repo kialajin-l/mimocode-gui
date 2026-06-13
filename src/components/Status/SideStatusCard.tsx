@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { Session, Project } from '../../types/session'
 import { readInputPrefs } from '../Chat/MessageInput'
 
@@ -14,7 +15,27 @@ export function SideStatusCard({ session, project }: SideStatusCardProps) {
   const estimatedTokens = Math.max(0, session?.messages.reduce((sum, message) => sum + Math.ceil(message.content.length / 3.6), 0) || 0)
   const contextLimit = 495_990
   const contextUsed = Math.min(100, Math.round((estimatedTokens / contextLimit) * 100))
-  const tasks = buildTasks(session?.messages.length || 0, changes.length)
+  const tasks = buildTasks(messageCount, changes.length)
+  const [mcpStatus, setMcpStatus] = useState<'connected' | 'disconnected'>('disconnected')
+
+  useEffect(() => {
+    const api = window.electronAPI
+    if (!api) return
+    api.getMimoPath().then(mimoPath => {
+      if (mimoPath) {
+        api.readFile(`${mimoPath}/mcp.json`).then(result => {
+          if (result?.success && result.content) {
+            try {
+              const config = JSON.parse(result.content)
+              if (config && Object.keys(config).length > 0) {
+                setMcpStatus('connected')
+              }
+            } catch {}
+          }
+        }).catch(() => {})
+      }
+    }).catch(() => {})
+  }, [])
 
   return (
     <aside className="side-status-card" aria-label="MiMo 状态信息">
@@ -30,7 +51,7 @@ export function SideStatusCard({ session, project }: SideStatusCardProps) {
         <p>{contextLimit.toLocaleString()} tokens</p>
         <p>{contextUsed}% used (估算)</p>
         <p>{session?.status === 'running' ? '运行中' : session?.status === 'error' ? '异常' : '空闲'}</p>
-        <p>统计待接入</p>
+        <p>{estimatedTokens.toLocaleString()} tokens 已使用 (估算)</p>
       </div>
 
       <div className="status-terminal-section">
@@ -40,13 +61,15 @@ export function SideStatusCard({ session, project }: SideStatusCardProps) {
 
       <div className="status-terminal-section">
         <h4>指令档案</h4>
-        <p><span className="orange-dot" /> ~/.codex/AGENTS.md</p>
-        <p><span className="orange-dot" /> 项目 AGENTS.md</p>
+        <p><span className="orange-dot" /> 当前项目: {cwd}</p>
       </div>
 
       <div className="status-terminal-section">
         <h4>MCP</h4>
-        <p><span className="yellow-dot" /> codegraph <em>待接入</em></p>
+        <p>
+          <span className={mcpStatus === 'connected' ? 'green-dot' : 'yellow-dot'} />
+          {' '}codegraph <em>{mcpStatus === 'connected' ? '已连接' : '待接入'}</em>
+        </p>
       </div>
 
       <div className="status-terminal-section">
@@ -60,7 +83,7 @@ export function SideStatusCard({ session, project }: SideStatusCardProps) {
       </div>
 
       <div className="status-terminal-section">
-        <h4>▼ Tasks</h4>
+        <h4>▼ Tasks (估算)</h4>
         {tasks.map(task => <p key={task}>[·] {task}</p>)}
         <p>▸ {Math.max(0, messageCount - tasks.length)} more done</p>
       </div>

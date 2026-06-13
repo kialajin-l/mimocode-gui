@@ -34,6 +34,45 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('')
   const [shortcutHelpOpen, setShortcutHelpOpen] = useState(false)
   const [workspaceView, setWorkspaceView] = useState<'workbench' | 'plugins' | 'settings' | 'automation'>('workbench')
+  const navHistoryRef = useRef<string[]>([])
+  const navIndexRef = useRef<number>(-1)
+  const navSkipRef = useRef(false)
+  const [canGoBack, setCanGoBack] = useState(false)
+  const [canGoForward, setCanGoForward] = useState(false)
+
+  const navigateTo = useCallback((view: string) => {
+    if (navSkipRef.current) {
+      navSkipRef.current = false
+      return
+    }
+    const history = navHistoryRef.current.slice(0, navIndexRef.current + 1)
+    history.push(view)
+    navHistoryRef.current = history
+    navIndexRef.current = history.length - 1
+    setWorkspaceView(view as any)
+    setCanGoBack(navIndexRef.current > 0)
+    setCanGoForward(false)
+  }, [])
+
+  const goBack = useCallback(() => {
+    if (navIndexRef.current > 0) {
+      navIndexRef.current -= 1
+      navSkipRef.current = true
+      setWorkspaceView(navHistoryRef.current[navIndexRef.current] as any)
+      setCanGoBack(navIndexRef.current > 0)
+      setCanGoForward(navIndexRef.current < navHistoryRef.current.length - 1)
+    }
+  }, [])
+
+  const goForward = useCallback(() => {
+    if (navIndexRef.current < navHistoryRef.current.length - 1) {
+      navIndexRef.current += 1
+      navSkipRef.current = true
+      setWorkspaceView(navHistoryRef.current[navIndexRef.current] as any)
+      setCanGoBack(navIndexRef.current > 0)
+      setCanGoForward(navIndexRef.current < navHistoryRef.current.length - 1)
+    }
+  }, [])
   const [confirmDialog, setConfirmDialog] = useState<Omit<ConfirmDialogProps, 'onConfirm' | 'onCancel'> & { onConfirm: () => void } | null>(null)
   const [openMenu, setOpenMenu] = useState<string | null>(null)
   const menuBarRef = useRef<HTMLDivElement>(null)
@@ -169,7 +208,7 @@ function App() {
   }, [])
 
   const handleQuickChat = useCallback(() => {
-    setWorkspaceView('workbench')
+    navigateTo('workbench')
     setOpenMenu(null)
     setTimeout(() => {
       const textarea = document.querySelector('.input-bar textarea') as HTMLTextAreaElement
@@ -259,7 +298,15 @@ function App() {
               {t('menu.edit')}
               {openMenu === 'edit' && (
                 <div className="menu-dropdown" onClick={e => e.stopPropagation()}>
-                  <div className="menu-dropdown-disabled">{t('menu.editTooltip')}</div>
+                  <div className="menu-dropdown-disabled" title="后续接入">{t('menu.undo')}</div>
+                  <div className="menu-dropdown-disabled" title="后续接入">{t('menu.redo')}</div>
+                  <div className="menu-dropdown-separator" />
+                  <button
+                    className="menu-dropdown-item"
+                    onClick={() => { setSearchOpen(true); setOpenMenu(null) }}
+                  >
+                    {t('menu.find')}
+                  </button>
                 </div>
               )}
             </span>
@@ -285,7 +332,7 @@ function App() {
                   <div className="menu-dropdown-separator" />
                   <button
                     className="menu-dropdown-item"
-                    onClick={() => { setWorkspaceView('plugins'); setOpenMenu(null) }}
+                    onClick={() => { navigateTo('plugins'); setOpenMenu(null) }}
                   >
                     {t('menu.pluginManager')}
                   </button>
@@ -325,10 +372,10 @@ function App() {
         <div className="app-body">
           <aside className="sidebar">
             <div className="sidebar-nav-row">
-              <button className="nav-btn" title="返回">
+              <button className="nav-btn" title="返回" onClick={goBack} disabled={!canGoBack}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
               </button>
-              <button className="nav-btn" title="前进">
+              <button className="nav-btn" title="前进" onClick={goForward} disabled={!canGoForward}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
               </button>
             </div>
@@ -343,7 +390,7 @@ function App() {
               </button>
               <button
                 className={`quick-item ${workspaceView === 'plugins' ? 'active' : ''}`}
-                onClick={() => setWorkspaceView('plugins')}
+                onClick={() => navigateTo('plugins')}
               >
                 <span className="quick-icon">
                   <svg viewBox="0 0 24 24"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/><line x1="12" y1="22" x2="12" y2="15.5"/><polyline points="22 8.5 12 15.5 2 8.5"/></svg>
@@ -352,7 +399,7 @@ function App() {
               </button>
               <button
                 className={`quick-item ${workspaceView === 'automation' ? 'active' : ''}`}
-                onClick={() => setWorkspaceView(workspaceView === 'automation' ? 'workbench' : 'automation')}
+                onClick={() => navigateTo(workspaceView === 'automation' ? 'workbench' : 'automation')}
               >
                 <span className="quick-icon">
                   <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
@@ -366,7 +413,7 @@ function App() {
             <div className="sidebar-bottom">
               <button
                 className={`settings-item ${workspaceView === 'settings' ? 'active' : ''}`}
-                onClick={() => setWorkspaceView(workspaceView === 'settings' ? 'workbench' : 'settings')}
+                onClick={() => navigateTo(workspaceView === 'settings' ? 'workbench' : 'settings')}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
                 {t('sidebar.settings')}
@@ -379,7 +426,7 @@ function App() {
               <div className="top-bar-left">
                 <button
                   className={`view-toggle-btn ${workspaceView === 'workbench' ? 'active' : ''}`}
-                  onClick={() => setWorkspaceView('workbench')}
+                  onClick={() => navigateTo('workbench')}
                   title="工作台"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
@@ -426,9 +473,9 @@ function App() {
 
             <div className={`chat-area ${workspaceView === 'plugins' || workspaceView === 'settings' || workspaceView === 'automation' ? 'workspace-page-area' : ''}`}>
               {workspaceView === 'plugins' ? (
-                <PluginManager onClose={() => setWorkspaceView('workbench')} />
+                <PluginManager onClose={() => navigateTo('workbench')} />
               ) : workspaceView === 'settings' ? (
-                <SettingsPage onClose={() => setWorkspaceView('workbench')} />
+                <SettingsPage onClose={() => navigateTo('workbench')} />
               ) : workspaceView === 'automation' ? (
                 <WorkflowPanel onSendMessage={sendMessage} />
               ) : activeSession ? (
@@ -467,8 +514,8 @@ function App() {
                     const session = createSession('New Session', '.')
                     useSessionStore.getState().setActiveSession(session.id)
                   }}
-                  onOpenPlugins={() => setWorkspaceView('plugins')}
-                  onOpenWorkflow={() => setWorkspaceView('automation')}
+                  onOpenPlugins={() => navigateTo('plugins')}
+                  onOpenWorkflow={() => navigateTo('automation')}
                   onToggleStatus={() => useSettingsStore.getState().setShowStatusCard(!useSettingsStore.getState().showStatusCard)}
                 />
               </div>

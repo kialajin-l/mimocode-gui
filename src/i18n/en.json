@@ -14,7 +14,10 @@
     "togglePanel": "Toggle Right Panel",
     "themeToggle": "Toggle Theme",
     "pluginManager": "Plugin Manager",
-    "editTooltip": "Undo/Redo/Find coming soon"
+    "editTooltip": "Undo/Redo/Find coming soon",
+    "undo": "Undo",
+    "redo": "Redo",
+    "find": "Find"
   },
   "sidebar": {
     "sessions": "Sessions",

@@ -14,7 +14,10 @@
     "togglePanel": "切换右侧面板",
     "themeToggle": "主题切换",
     "pluginManager": "插件管理",
-    "editTooltip": "后续接入撤销/重做/查找"
+    "editTooltip": "后续接入撤销/重做/查找",
+    "undo": "撤销",
+    "redo": "重做",
+    "find": "查找"
   },
   "sidebar": {
     "sessions": "会话",

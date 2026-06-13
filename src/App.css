@@ -343,6 +343,12 @@ html, body {
   color: var(--text-primary);
 }
 
+.nav-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+  pointer-events: none;
+}
+
 /* Quick access items */
 .quick-item {
   display: flex;
@@ -1117,7 +1123,8 @@ html, body {
 }
 
 .orange-dot,
-.yellow-dot {
+.yellow-dot,
+.green-dot {
   display: inline-block;
   width: 5px;
   height: 5px;
@@ -1132,6 +1139,10 @@ html, body {
 
 .yellow-dot {
   background: #f5d06f;
+}
+
+.green-dot {
+  background: #22c55e;
 }
 
 .status-terminal-footer {
@@ -3684,6 +3695,15 @@ html, body {
 .native-session-btn.disabled:hover {
   border-color: var(--border-color);
   color: var(--text-tertiary);
+}
+
+.native-session-btn.continue {
+  border-color: #22c55e;
+  color: #22c55e;
+}
+
+.native-session-btn.continue:hover {
+  background: rgba(34, 197, 94, 0.1);
 }
 
 /* Native preview dialog */
