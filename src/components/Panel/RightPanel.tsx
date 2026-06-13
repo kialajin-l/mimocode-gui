@@ -3,6 +3,8 @@ import { FileChange } from '../../utils/diffParser'
 import { DiffViewer } from './DiffViewer'
 import { VersionHistory } from './VersionHistory'
 import { BookmarksPanel } from './BookmarksPanel'
+import { InspectorPanel } from '../Inspector/InspectorPanel'
+import { useInspectorStore } from '../../stores/inspectorStore'
 
 interface RightPanelProps {
   open: boolean
@@ -13,7 +15,14 @@ interface RightPanelProps {
 }
 
 export function RightPanel({ open, changes, sessionId, onAcceptChange, onRejectChange }: RightPanelProps) {
-  const [activeTab, setActiveTab] = useState<'review' | 'terminal' | 'versions' | 'bookmarks'>('review')
+  const [activeTab, setActiveTab] = useState<'review' | 'terminal' | 'versions' | 'bookmarks' | 'inspector'>('review')
+  const { fetchSessions } = useInspectorStore()
+
+  useEffect(() => {
+    if (open && activeTab === 'inspector') {
+      fetchSessions()
+    }
+  }, [open, activeTab, fetchSessions])
 
   return (
     <aside className={`right-panel ${open ? 'open' : ''}`}>
@@ -29,6 +38,12 @@ export function RightPanel({ open, changes, sessionId, onAcceptChange, onRejectC
           onClick={() => setActiveTab('terminal')}
         >
           终端
+        </button>
+        <button
+          className={`panel-tab ${activeTab === 'inspector' ? 'active' : ''}`}
+          onClick={() => setActiveTab('inspector')}
+        >
+          Inspector
         </button>
         {sessionId && (
           <>
@@ -57,6 +72,13 @@ export function RightPanel({ open, changes, sessionId, onAcceptChange, onRejectC
           />
         )}
         {activeTab === 'terminal' && <TerminalPanel />}
+        {activeTab === 'inspector' && (
+          <InspectorPanel
+            changes={changes}
+            onAcceptChange={onAcceptChange}
+            onRejectChange={onRejectChange}
+          />
+        )}
         {activeTab === 'versions' && sessionId && (
           <VersionHistory sessionId={sessionId} />
         )}
