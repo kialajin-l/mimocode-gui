@@ -7,9 +7,11 @@ import { MessageInput } from './components/Chat/MessageInput'
 import { RightPanel } from './components/Panel/RightPanel'
 import { SearchBar } from './components/Search/SearchBar'
 import { ShortcutHelp } from './components/Help/ShortcutHelp'
+import { WebUIHost } from './components/WebUI/WebUIHost'
 import { useSession } from './hooks/useSession'
 import { useKeyboardShortcuts, setTogglePanelCallback, setSearchOpenCallback } from './hooks/useKeyboardShortcuts'
 import { useSessionStore } from './stores/sessionStore'
+import { useRuntimeStore } from './stores/runtimeStore'
 import { useI18n } from './i18n'
 import { parseDiff } from './utils/diffParser'
 import { exportSessionToMarkdown, sessionToFilename } from './utils/exportSession'
@@ -24,7 +26,9 @@ function App() {
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [shortcutHelpOpen, setShortcutHelpOpen] = useState(false)
+  const [viewMode, setViewMode] = useState<'chat' | 'webui'>('chat')
   const { t, locale, setLocale } = useI18n()
+  const syncServeStatus = useRuntimeStore(s => s.syncServeStatus)
   useKeyboardShortcuts()
 
   const togglePanel = useCallback(() => {
@@ -108,6 +112,7 @@ function App() {
 
   useEffect(() => {
     loadData()
+    syncServeStatus()
   }, [])
 
   useEffect(() => {
@@ -211,8 +216,22 @@ function App() {
           <main className="main-content">
             <header className="top-bar">
               <div className="top-bar-left">
+                <button
+                  className={`view-toggle-btn ${viewMode === 'chat' ? 'active' : ''}`}
+                  onClick={() => setViewMode('chat')}
+                  title="Chat"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                </button>
+                <button
+                  className={`view-toggle-btn ${viewMode === 'webui' ? 'active' : ''}`}
+                  onClick={() => setViewMode('webui')}
+                  title="Web UI"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                </button>
                 <span className="session-breadcrumb">
-                  {activeSession?.name || t('app.title')}
+                  {viewMode === 'webui' ? 'Web UI' : (activeSession?.name || t('app.title'))}
                 </span>
               </div>
               <div className="top-bar-right">
@@ -244,7 +263,9 @@ function App() {
             </header>
 
             <div className="chat-area">
-              {activeSession ? (
+              {viewMode === 'webui' ? (
+                <WebUIHost />
+              ) : activeSession ? (
                 <MessageList messages={activeSession.messages} sessionId={activeSession.id} />
               ) : (
                 <div className="welcome">
@@ -257,6 +278,7 @@ function App() {
               )}
             </div>
 
+            {viewMode === 'chat' && (
             <div className="input-bar">
               <div className="input-wrapper">
                 <MessageInput
@@ -266,6 +288,7 @@ function App() {
                 />
               </div>
             </div>
+            )}
           </main>
 
           <RightPanel

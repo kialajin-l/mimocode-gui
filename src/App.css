@@ -2897,3 +2897,238 @@ html, body {
     width: 100%;
   }
 }
+
+/* View toggle buttons */
+.view-toggle-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-speed);
+  border: none;
+  background: transparent;
+}
+
+.view-toggle-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.view-toggle-btn.active {
+  color: var(--accent-color);
+  background: rgba(124, 58, 237, 0.12);
+}
+
+/* WebUI Host */
+.webui-host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.webui-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  flex-shrink: 0;
+}
+
+.webui-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.webui-toolbar-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  flex-shrink: 0;
+}
+
+.webui-toolbar-url {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  font-family: 'JetBrains Mono', monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.webui-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.webui-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all var(--transition-speed);
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.webui-action-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.webui-start-btn {
+  border-color: var(--success-color);
+  color: var(--success-color);
+}
+
+.webui-start-btn:hover {
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.webui-stop-btn {
+  border-color: var(--error-color);
+  color: var(--error-color);
+}
+
+.webui-stop-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.webui-content {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.webui-webview-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transition: opacity var(--transition-speed);
+}
+
+.webui-webview {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.webui-loading-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: rgba(13, 13, 20, 0.7);
+  z-index: 10;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.webui-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border-color);
+  border-top-color: var(--accent-color);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.webui-retry-btn {
+  padding: 4px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--accent-color);
+  background: transparent;
+  color: var(--accent-color);
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all var(--transition-speed);
+}
+
+.webui-retry-btn:hover {
+  background: rgba(124, 58, 237, 0.1);
+}
+
+.webui-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 40px;
+  text-align: center;
+}
+
+.webui-placeholder-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 20px;
+  background: radial-gradient(circle at 40% 40%, rgba(124, 58, 237, 0.22), transparent 70%),
+              rgba(124, 58, 237, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  color: var(--accent-color);
+}
+
+.webui-placeholder-icon.error {
+  background: radial-gradient(circle at 40% 40%, rgba(239, 68, 68, 0.22), transparent 70%),
+              rgba(239, 68, 68, 0.06);
+  color: var(--error-color);
+}
+
+.webui-placeholder h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+}
+
+.webui-placeholder p {
+  font-size: 14px;
+  color: var(--text-tertiary);
+  margin-bottom: 20px;
+}
+
+.webui-placeholder-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 10px;
+  border: 1px solid var(--accent-color);
+  background: transparent;
+  color: var(--accent-color);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-speed);
+}
+
+.webui-placeholder-btn:hover {
+  background: rgba(124, 58, 237, 0.1);
+}
