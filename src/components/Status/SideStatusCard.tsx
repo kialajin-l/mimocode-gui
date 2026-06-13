@@ -28,9 +28,9 @@ export function SideStatusCard({ session, project }: SideStatusCardProps) {
       <div className="status-terminal-section">
         <h4>Context</h4>
         <p>{contextLimit.toLocaleString()} tokens</p>
-        <p>{contextUsed}% used</p>
-        <p>{session?.status === 'running' ? 'running' : 'idle'}</p>
-        <p>$0.00 spent</p>
+        <p>{contextUsed}% used (估算)</p>
+        <p>{session?.status === 'running' ? '运行中' : session?.status === 'error' ? '异常' : '空闲'}</p>
+        <p>统计待接入</p>
       </div>
 
       <div className="status-terminal-section">
@@ -46,32 +46,32 @@ export function SideStatusCard({ session, project }: SideStatusCardProps) {
 
       <div className="status-terminal-section">
         <h4>MCP</h4>
-        <p><span className="yellow-dot" /> codegraph <em>已连接</em></p>
+        <p><span className="yellow-dot" /> codegraph <em>待接入</em></p>
       </div>
 
       <div className="status-terminal-section">
         <h4>LSP</h4>
-        <p>LSPs will activate as files are read</p>
+        <p>待接入</p>
       </div>
 
       <div className="status-terminal-section">
         <h4>Goal</h4>
-        <p><span className="orange-dot" /> {project?.name ? `${project.name}: active` : 'Judge: pending'}</p>
+        <p><span className="orange-dot" /> 当前未设置目标</p>
       </div>
 
       <div className="status-terminal-section">
         <h4>▼ Tasks</h4>
-        {tasks.map(task => <p key={task}>[✓] {task}</p>)}
+        {tasks.map(task => <p key={task}>[·] {task}</p>)}
         <p>▸ {Math.max(0, messageCount - tasks.length)} more done</p>
       </div>
 
       <div className="status-terminal-section">
         <h4>▸ Modified Files</h4>
-        <p>{changes.length > 0 ? `${changes.length} files changed` : 'No modified files'}</p>
+        <p>{changes.length > 0 ? `${changes.length} 个文件已修改` : '暂无修改文件'}</p>
       </div>
 
       <div className="status-terminal-footer">
-        <span>{prefs.model || 'default model'}</span>
+        <span>{prefs.model || '默认模型'}</span>
         <span>{prefs.reasoning}</span>
       </div>
     </aside>

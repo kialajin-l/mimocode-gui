@@ -462,6 +462,14 @@ function App() {
                   onSend={sendMessage}
                   onCancel={activeSession?.status === 'running' ? cancelMessage : undefined}
                   isRunning={activeSession?.status === 'running'}
+                  onNewSession={() => {
+                    const createSession = useSessionStore.getState().createSession
+                    const session = createSession('New Session', '.')
+                    useSessionStore.getState().setActiveSession(session.id)
+                  }}
+                  onOpenPlugins={() => setWorkspaceView('plugins')}
+                  onOpenWorkflow={() => setWorkspaceView('automation')}
+                  onToggleStatus={() => useSettingsStore.getState().setShowStatusCard(!useSettingsStore.getState().showStatusCard)}
                 />
               </div>
             </div>

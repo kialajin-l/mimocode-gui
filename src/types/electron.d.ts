@@ -80,6 +80,14 @@ interface ElectronAPI {
   getMimoServeStatus: () => Promise<{ status: 'running' | 'stopped' | 'error'; url: string | null }>
   onMimoServeOutput: (callback: (data: { type: string; content: string }) => void) => (() => void)
 
+  // Plugins
+  scanPlugins: () => Promise<{
+    success: boolean
+    plugins: { id: string; name: string; description: string; path: string; source: string; enabled: boolean }[]
+    error?: string
+  }>
+  installPlugin: (module: string) => Promise<{ success: boolean; output?: string; error?: string }>
+
   // Inspector / data adapters
   fetchSessions: () => Promise<{ success: boolean; sessions: any[]; error?: string }>
   exportSessionData: (sessionId: string) => Promise<{ success: boolean; data: any; error?: string }>

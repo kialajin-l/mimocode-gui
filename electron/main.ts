@@ -10,6 +10,7 @@ import {
   validateFilePath, validateCwd, isSensitiveFile,
   isDangerousCommand, logOperation
 } from './security-ipc'
+import { scanPluginDirectories } from './plugin-scanner'
 
 const DATA_DIR = app.getPath('userData')
 const DATA_FILE = path.join(DATA_DIR, 'sessions.json')
@@ -493,6 +494,43 @@ app.on('window-all-closed', () => {
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow()
+  }
+})
+
+// Plugin scanning
+ipcMain.handle('plugin-list-scan', () => {
+  try {
+    return { success: true, plugins: scanPluginDirectories() }
+  } catch (err) {
+    return { success: false, plugins: [], error: String(err) }
+  }
+})
+
+ipcMain.handle('plugin-install', async (_, module: string) => {
+  try {
+    const mimoPath = getMimoPath()
+    return new Promise((resolve) => {
+      const child = spawn(mimoPath, ['plugin', module], {
+        stdio: ['pipe', 'pipe', 'pipe'],
+        timeout: 30000,
+      })
+      let stdout = ''
+      let stderr = ''
+      child.stdout?.on('data', (d: Buffer) => { stdout += d.toString() })
+      child.stderr?.on('data', (d: Buffer) => { stderr += d.toString() })
+      child.on('close', (code: number | null) => {
+        if (code === 0) {
+          resolve({ success: true, output: stdout })
+        } else {
+          resolve({ success: false, error: stderr || stdout || `exit code ${code}` })
+        }
+      })
+      child.on('error', (err: Error) => {
+        resolve({ success: false, error: String(err) })
+      })
+    })
+  } catch (err) {
+    return { success: false, error: String(err) }
   }
 })
 

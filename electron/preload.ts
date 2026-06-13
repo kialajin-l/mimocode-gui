@@ -120,6 +120,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return () => ipcRenderer.removeListener('mimo-serve-output', listener)
   },
 
+  // Plugins
+  scanPlugins: () => safeInvoke('plugin-list-scan'),
+  installPlugin: (module: string) => safeInvoke('plugin-install', module),
+
   // Inspector / data adapters
   fetchSessions: () => safeInvoke('fetch-sessions'),
   exportSessionData: (sessionId: string) => safeInvoke('export-session-data', sessionId),
