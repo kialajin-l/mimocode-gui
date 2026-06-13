@@ -94,5 +94,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // File operations
   readFile: (filePath: string) => safeInvoke('read-file', filePath),
-  openFile: (filters?: { name: string; extensions: string[] }[]) => safeInvoke('open-file', filters)
+  openFile: (filters?: { name: string; extensions: string[] }[]) => safeInvoke('open-file', filters),
+
+  // Mimo Serve
+  startMimoServe: (port?: number) => safeInvoke('mimo-serve-start', port),
+  stopMimoServe: () => safeInvoke('mimo-serve-stop'),
+  getMimoServeStatus: () => safeInvoke('mimo-serve-status'),
+  onMimoServeOutput: (callback: (data: { type: string; content: string }) => void) => {
+    const listener = (_: any, data: { type: string; content: string }) => {
+      callback(data)
+    }
+    ipcRenderer.on('mimo-serve-output', listener)
+    return () => ipcRenderer.removeListener('mimo-serve-output', listener)
+  }
 })

@@ -58,6 +58,12 @@ interface ElectronAPI {
     canceled?: boolean
     error?: string
   }>
+
+  // Mimo Serve
+  startMimoServe: (port?: number) => Promise<{ success: boolean; url?: string; error?: string }>
+  stopMimoServe: () => Promise<boolean>
+  getMimoServeStatus: () => Promise<{ status: 'running' | 'stopped' | 'error'; url: string | null }>
+  onMimoServeOutput: (callback: (data: { type: string; content: string }) => void) => (() => void)
 }
 
 declare global {

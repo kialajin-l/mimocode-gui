@@ -3,6 +3,7 @@ import path from 'path'
 import fs from 'fs'
 import { spawn, execFileSync, ChildProcess } from 'child_process'
 import { sendMessage, cancelMessage, getMimoPath, stopAllProcesses } from './cli-bridge'
+import { startMimoServe, stopMimoServe, getMimoServeStatus, onMimoServeOutput } from './mimo-process'
 
 const DATA_DIR = app.getPath('userData')
 const DATA_FILE = path.join(DATA_DIR, 'sessions.json')
@@ -122,11 +123,47 @@ ipcMain.handle('save-data', (_, data: any) => {
 })
 
 app.on('before-quit', () => {
+  stopMimoServe()
   stopAllProcesses()
   for (const proc of terminalProcesses.values()) {
     if (!proc.killed) proc.kill()
   }
   terminalProcesses.clear()
+})
+
+ipcMain.handle('mimo-serve-start', async (_, port?: number) => {
+  try {
+    return await startMimoServe(port)
+  } catch (err) {
+    return { success: false, error: String(err) }
+  }
+})
+
+ipcMain.handle('mimo-serve-stop', () => {
+  try {
+    return stopMimoServe()
+  } catch (err) {
+    return false
+  }
+})
+
+ipcMain.handle('mimo-serve-status', () => {
+  try {
+    return getMimoServeStatus()
+  } catch (err) {
+    return { status: 'stopped', url: null }
+  }
+})
+
+ipcMain.handle('mimo-serve-output', () => {
+  const unsubscribe = onMimoServeOutput((data) => {
+    try {
+      mainWindow?.webContents.send('mimo-serve-output', data)
+    } catch (e) {
+      console.error('[Main] Failed to send serve output:', e)
+    }
+  })
+  return { success: true }
 })
 
 // Terminal execution
