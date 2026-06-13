@@ -5,14 +5,14 @@ import { ContextTab } from './ContextTab'
 import { ReviewTab } from './ReviewTab'
 
 interface InspectorPanelProps {
-  changes: FileChange[]
+  changes?: FileChange[]
   onAcceptChange?: (file: string) => void
   onRejectChange?: (file: string) => void
 }
 
 type InspectorTab = 'changes' | 'context' | 'review'
 
-export function InspectorPanel({ changes, onAcceptChange, onRejectChange }: InspectorPanelProps) {
+export function InspectorPanel({ changes = [], onAcceptChange, onRejectChange }: InspectorPanelProps) {
   const [activeTab, setActiveTab] = useState<InspectorTab>('review')
 
   return (

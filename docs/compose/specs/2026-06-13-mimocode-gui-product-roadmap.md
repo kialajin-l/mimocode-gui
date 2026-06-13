@@ -270,7 +270,7 @@ Embedded Web UI + CLI export/session list + SQLite/memory read-only polling
 
 > **状态：暂停，不进入当前产品路线。**
 
-原计划为"写作工作台深化"，包括章节树、角色数据库、世界观设定、写作一致性检查等。经产品方向修订，这些功能与编程桌面工作台定位不符，已从路线图中移除。
+原 Phase 5 非当前编程桌面工作台产品目标，已暂停并从当前实施路线中移除。
 
 **替代方向（待评估，不承诺实现）：**
 
@@ -405,9 +405,9 @@ src/
 
 输出：代码模式 inspector 可用（Changes/Context/Review）。
 
-### M4: 待定
+### M4: 下一技术工作流薄片
 
-根据 Phase 5 候选方向的 ROI 评估结果决定。
+仅评估编程与技术工作流方向，例如代码审查自动化、任务/Memory Inspector、GitHub/CI 集成或本地运行时诊断。具体范围需单独形成 spec / plan 后再进入实施。
 
 ## 14. 非目标
 
@@ -425,13 +425,13 @@ src/
 
 建议按以下顺序推进：
 
-1. 执行 Phase 0，修复当前高危问题。
-2. 在 Phase 0 内完成安全 IPC 收敛，确保嵌入 Web UI 前 renderer 没有裸高危能力。
-3. 实现 `mimo serve` 启动和 Web UI 嵌入，同时跑 `mimo acp --help` 并记录 ACP 能力。
-4. 根据 ACP 结果选择数据适配路线，并评估 `codex-workflow` executor 是否可复用。
-5. 实现代码模式 inspector（Changes/Context/Review）。
+1. 复核 Phase 0-4 已完成项的真实性，确保实现、测试和文档状态一致。
+2. 清理或隐藏与当前产品定位不符的写作工作台入口和实现。
+3. 为下一个编程/技术工作流薄片单独编写 spec / plan。
+4. 优先评估代码审查自动化、任务/Memory Inspector、GitHub/CI 集成或本地运行时诊断。
+5. 每次只选择一个薄片进入实施，避免再次扩大范围。
 
-这样可以避免在不成立的 REST/SDK 假设上继续投入，同时利用 MiMo/OpenCode 已有 Web UI，把开发资源留给真正有差异化价值的桌面和技术工作流能力。
+这样可以避免在不成立的 REST/SDK 假设和非核心产品方向上继续投入，同时利用 MiMo/OpenCode 已有 Web UI，把开发资源留给真正有差异化价值的桌面和技术工作流能力。
 
 ---
 

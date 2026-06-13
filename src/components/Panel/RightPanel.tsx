@@ -5,9 +5,6 @@ import { VersionHistory } from './VersionHistory'
 import { BookmarksPanel } from './BookmarksPanel'
 import { InspectorPanel } from '../Inspector/InspectorPanel'
 import { useInspectorStore } from '../../stores/inspectorStore'
-import { OutlinePanel } from '../Writing/OutlinePanel'
-import { CharacterPanel } from '../Writing/CharacterPanel'
-import { WorldPanel } from '../Writing/WorldPanel'
 
 interface RightPanelProps {
   open: boolean
@@ -17,14 +14,10 @@ interface RightPanelProps {
   onRejectChange?: (file: string) => void
 }
 
-type PanelMode = 'code' | 'writing'
 type CodeTab = 'review' | 'terminal' | 'versions' | 'bookmarks' | 'inspector'
-type WritingTab = 'outline' | 'characters' | 'world'
 
 export function RightPanel({ open, changes, sessionId, onAcceptChange, onRejectChange }: RightPanelProps) {
-  const [panelMode, setPanelMode] = useState<PanelMode>('code')
   const [codeTab, setCodeTab] = useState<CodeTab>('review')
-  const [writingTab, setWritingTab] = useState<WritingTab>('outline')
   const { fetchSessions } = useInspectorStore()
 
   useEffect(() => {
@@ -35,122 +28,58 @@ export function RightPanel({ open, changes, sessionId, onAcceptChange, onRejectC
 
   return (
     <aside className={`right-panel ${open ? 'open' : ''}`}>
-      <div className="panel-mode-switch">
-        <button
-          className={`panel-mode-btn ${panelMode === 'code' ? 'active' : ''}`}
-          onClick={() => setPanelMode('code')}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="16 18 22 12 16 6"/>
-            <polyline points="8 6 2 12 8 18"/>
-          </svg>
-          代码
-        </button>
-        <button
-          className={`panel-mode-btn ${panelMode === 'writing' ? 'active' : ''}`}
-          onClick={() => setPanelMode('writing')}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
-          </svg>
-          写作
-        </button>
-      </div>
-
       <div className="panel-tabs">
-        {panelMode === 'code' ? (
+        <button
+          className={`panel-tab ${codeTab === 'review' ? 'active' : ''}`}
+          onClick={() => setCodeTab('review')}
+        >
+          审查
+        </button>
+        <button
+          className={`panel-tab ${codeTab === 'terminal' ? 'active' : ''}`}
+          onClick={() => setCodeTab('terminal')}
+        >
+          终端
+        </button>
+        {sessionId && (
           <>
-            <button
-              className={`panel-tab ${codeTab === 'review' ? 'active' : ''}`}
-              onClick={() => setCodeTab('review')}
-            >
-              审查
-            </button>
-            <button
-              className={`panel-tab ${codeTab === 'terminal' ? 'active' : ''}`}
-              onClick={() => setCodeTab('terminal')}
-            >
-              终端
-            </button>
             <button
               className={`panel-tab ${codeTab === 'inspector' ? 'active' : ''}`}
               onClick={() => setCodeTab('inspector')}
             >
               Inspector
             </button>
-            {sessionId && (
-              <>
-                <button
-                  className={`panel-tab ${codeTab === 'versions' ? 'active' : ''}`}
-                  onClick={() => setCodeTab('versions')}
-                >
-                  版本
-                </button>
-                <button
-                  className={`panel-tab ${codeTab === 'bookmarks' ? 'active' : ''}`}
-                  onClick={() => setCodeTab('bookmarks')}
-                >
-                  书签
-                </button>
-              </>
-            )}
-          </>
-        ) : (
-          <>
             <button
-              className={`panel-tab ${writingTab === 'outline' ? 'active' : ''}`}
-              onClick={() => setWritingTab('outline')}
+              className={`panel-tab ${codeTab === 'versions' ? 'active' : ''}`}
+              onClick={() => setCodeTab('versions')}
             >
-              大纲
+              版本
             </button>
             <button
-              className={`panel-tab ${writingTab === 'characters' ? 'active' : ''}`}
-              onClick={() => setWritingTab('characters')}
+              className={`panel-tab ${codeTab === 'bookmarks' ? 'active' : ''}`}
+              onClick={() => setCodeTab('bookmarks')}
             >
-              角色
-            </button>
-            <button
-              className={`panel-tab ${writingTab === 'world' ? 'active' : ''}`}
-              onClick={() => setWritingTab('world')}
-            >
-              世界观
+              书签
             </button>
           </>
         )}
       </div>
 
       <div className="panel-content">
-        {panelMode === 'code' && (
-          <>
-            {codeTab === 'review' && (
-              <DiffViewer
-                changes={changes}
-                onAccept={onAcceptChange}
-                onReject={onRejectChange}
-              />
-            )}
-            {codeTab === 'terminal' && <TerminalPanel />}
-            {codeTab === 'inspector' && (
-              <InspectorPanel
-                changes={changes}
-                onAcceptChange={onAcceptChange}
-                onRejectChange={onRejectChange}
-              />
-            )}
-            {codeTab === 'versions' && sessionId && (
-              <VersionHistory sessionId={sessionId} />
-            )}
-            {codeTab === 'bookmarks' && sessionId && (
-              <BookmarksPanel sessionId={sessionId} />
-            )}
-          </>
+        {codeTab === 'review' && (
+          <DiffViewer
+            changes={changes}
+            onAccept={onAcceptChange}
+            onReject={onRejectChange}
+          />
         )}
-        {panelMode === 'writing' && (
-          <>
-            {writingTab === 'outline' && <OutlinePanel />}
-            {writingTab === 'characters' && <CharacterPanel />}
-            {writingTab === 'world' && <WorldPanel />}
-          </>
+        {codeTab === 'terminal' && <TerminalPanel />}
+        {codeTab === 'inspector' && sessionId && <InspectorPanel />}
+        {codeTab === 'versions' && sessionId && (
+          <VersionHistory sessionId={sessionId} />
+        )}
+        {codeTab === 'bookmarks' && sessionId && (
+          <BookmarksPanel sessionId={sessionId} />
         )}
       </div>
     </aside>
