@@ -3707,3 +3707,458 @@ html, body {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* Writing Panel Styles */
+.panel-mode-switch {
+  display: flex;
+  padding: 8px 10px 0;
+  gap: 4px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.panel-mode-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--text-tertiary);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: all var(--transition-speed);
+  margin-bottom: -1px;
+}
+
+.panel-mode-btn:hover {
+  color: var(--text-secondary);
+}
+
+.panel-mode-btn.active {
+  color: var(--accent-color);
+  border-bottom-color: var(--accent-color);
+}
+
+.writing-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.writing-panel-header {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.writing-panel-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.writing-panel-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+}
+
+.writing-add-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.writing-input {
+  flex: 1;
+  padding: 7px 10px;
+  font-size: 12.5px;
+  font-family: inherit;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color var(--transition-speed);
+}
+
+.writing-input:focus {
+  border-color: var(--accent-color);
+}
+
+.writing-input-sm {
+  width: 80px;
+  flex: 0 0 80px;
+}
+
+.writing-add-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: var(--accent-color);
+  border: none;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+  transition: background var(--transition-speed);
+}
+
+.writing-add-btn:hover {
+  background: var(--accent-hover);
+}
+
+.writing-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.writing-empty p {
+  margin: 0;
+}
+
+.writing-empty-hint {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-top: 4px !important;
+}
+
+.writing-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.writing-list-item {
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+  padding: 10px;
+  transition: background var(--transition-speed);
+}
+
+.writing-list-item:hover {
+  background: var(--bg-hover);
+}
+
+.writing-list-item-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.writing-list-item-order {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.writing-reorder-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 12px;
+  background: transparent;
+  border: none;
+  border-radius: 3px;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: all var(--transition-speed);
+}
+
+.writing-reorder-btn:hover:not(:disabled) {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.writing-reorder-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.writing-order-number {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  min-width: 16px;
+  text-align: center;
+}
+
+.writing-list-item-title {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.writing-clickable-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: color var(--transition-speed);
+}
+
+.writing-clickable-title:hover {
+  color: var(--accent-color);
+}
+
+.writing-inline-input {
+  width: 100%;
+  padding: 4px 8px;
+  font-size: 13px;
+  font-family: inherit;
+  font-weight: 500;
+  background: var(--bg-primary);
+  border: 1px solid var(--accent-color);
+  border-radius: 4px;
+  color: var(--text-primary);
+  outline: none;
+}
+
+.writing-textarea {
+  width: 100%;
+  padding: 8px;
+  font-size: 12.5px;
+  font-family: inherit;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-primary);
+  outline: none;
+  resize: vertical;
+  min-height: 60px;
+}
+
+.writing-textarea:focus {
+  border-color: var(--accent-color);
+}
+
+.writing-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.writing-delete-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: all var(--transition-speed);
+}
+
+.writing-delete-btn:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--error-color);
+}
+
+.writing-list-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-color);
+}
+
+.writing-status-select {
+  padding: 4px 8px;
+  font-size: 11px;
+  font-family: inherit;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  outline: none;
+}
+
+.writing-status-badge {
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.writing-word-count {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  margin-left: auto;
+}
+
+.writing-character-item {
+  padding: 12px;
+}
+
+.writing-character-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: white;
+  flex-shrink: 0;
+}
+
+.writing-character-role {
+  font-size: 11.5px;
+  color: var(--text-tertiary);
+}
+
+.writing-character-desc {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.writing-character-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.writing-character-edit-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.writing-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.writing-btn-primary {
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  background: var(--accent-color);
+  border: none;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+  transition: background var(--transition-speed);
+}
+
+.writing-btn-primary:hover {
+  background: var(--accent-hover);
+}
+
+.writing-btn-secondary {
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  background: var(--bg-tertiary);
+  border: none;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-speed);
+}
+
+.writing-btn-secondary:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.writing-category-group {
+  margin-bottom: 8px;
+}
+
+.writing-category-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--bg-tertiary);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background var(--transition-speed);
+}
+
+.writing-category-header:hover {
+  background: var(--bg-hover);
+}
+
+.writing-category-icon {
+  font-size: 14px;
+}
+
+.writing-category-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+  flex: 1;
+}
+
+.writing-category-count {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  background: var(--bg-primary);
+  padding: 2px 6px;
+  border-radius: 10px;
+}
+
+.writing-category-chevron {
+  color: var(--text-tertiary);
+  transition: transform var(--transition-speed);
+}
+
+.writing-category-chevron.expanded {
+  transform: rotate(180deg);
+}
+
+.writing-category-items {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 0 0 12px;
+}
+
+.writing-setting-item {
+  padding: 8px 10px;
+}
+
+.writing-setting-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.writing-setting-edit-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.writing-setting-desc-preview {
+  font-size: 11.5px;
+  color: var(--text-tertiary);
+}
