@@ -37,6 +37,21 @@ function scanMdFiles(dir: string): MemoryFile[] {
   }
 }
 
+function scanNamedMdFiles(projectDir: string, names: string[]): MemoryFile[] {
+  return names
+    .map(name => path.join(projectDir, name))
+    .filter(filePath => fs.existsSync(filePath))
+    .map(filePath => {
+      const stat = fs.statSync(filePath)
+      return {
+        name: path.basename(filePath),
+        path: filePath,
+        content: fs.readFileSync(filePath, 'utf-8'),
+        mtime: stat.mtimeMs
+      }
+    })
+}
+
 function validateProjectDir(projectDir: string): boolean {
   if (!projectDir || typeof projectDir !== 'string') return false
   // Reject path traversal
@@ -51,7 +66,13 @@ export function readMemoryFiles(projectDir: string): MemoryFile[] {
   if (!validateProjectDir(projectDir)) return []
   const memoryDir = path.join(projectDir, '.claude', 'memory')
   const altMemoryDir = path.join(projectDir, '.mimo', 'memory')
-  const files = [...scanMdFiles(memoryDir), ...scanMdFiles(altMemoryDir)]
+  const mimoCodeMemoryDir = path.join(projectDir, '.mimocode', 'memory')
+  const files = [
+    ...scanNamedMdFiles(projectDir, ['MEMORY.md', 'notes.md']),
+    ...scanMdFiles(memoryDir),
+    ...scanMdFiles(altMemoryDir),
+    ...scanMdFiles(mimoCodeMemoryDir)
+  ]
   const seen = new Set<string>()
   return files.filter(f => {
     if (seen.has(f.name)) return false
@@ -61,9 +82,16 @@ export function readMemoryFiles(projectDir: string): MemoryFile[] {
 }
 
 export function readCheckpoints(projectDir: string): CheckpointFile[] {
+  if (!validateProjectDir(projectDir)) return []
   const checkpointDir = path.join(projectDir, '.claude', 'checkpoints')
   const altCheckpointDir = path.join(projectDir, '.mimo', 'checkpoints')
-  const files = [...scanMdFiles(checkpointDir), ...scanMdFiles(altCheckpointDir)]
+  const mimoCodeCheckpointDir = path.join(projectDir, '.mimocode', 'checkpoints')
+  const files = [
+    ...scanNamedMdFiles(projectDir, ['checkpoint.md']),
+    ...scanMdFiles(checkpointDir),
+    ...scanMdFiles(altCheckpointDir),
+    ...scanMdFiles(mimoCodeCheckpointDir)
+  ]
   const seen = new Set<string>()
   return files.filter(f => {
     if (seen.has(f.name)) return false

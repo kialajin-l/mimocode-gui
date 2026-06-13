@@ -12,7 +12,7 @@ export function ReviewTab() {
     return (
       <div className="inspector-loading">
         <div className="inspector-spinner" />
-        <span>Loading session...</span>
+        <span>正在加载会话...</span>
       </div>
     )
   }
@@ -25,13 +25,14 @@ export function ReviewTab() {
   )?.length || 0
 
   const checklist: ReviewChecklistItem[] = [
-    { label: 'Session has messages', status: messageCount > 0 ? 'pass' : 'warn' },
-    { label: 'Contains tool calls', status: toolCalls > 0 ? 'pass' : 'pending' },
-    { label: 'No errors logged', status: errorMessages === 0 ? 'pass' : 'fail' },
-    { label: 'Changes reviewed', status: session?.changes?.length > 0 ? 'pending' : 'pass' },
+    { label: '会话已有消息', status: messageCount > 0 ? 'pass' : 'warn' },
+    { label: '包含工具调用', status: toolCalls > 0 ? 'pass' : 'pending' },
+    { label: '未记录错误', status: errorMessages === 0 ? 'pass' : 'fail' },
+    { label: '变更已审查', status: session?.changes?.length > 0 ? 'pending' : 'pass' },
   ]
 
   const riskLevel = toolCalls > 10 ? 'high' : toolCalls > 5 ? 'medium' : 'low'
+  const riskLabel = riskLevel === 'high' ? '高' : riskLevel === 'medium' ? '中' : '低'
 
   return (
     <div className="inspector-review">
@@ -39,25 +40,25 @@ export function ReviewTab() {
         <>
           <div className="inspector-review-summary">
             <div className="inspector-summary-row">
-              <span className="inspector-label">Session</span>
+              <span className="inspector-label">会话</span>
               <span className="inspector-value">{session.name || session.id}</span>
             </div>
             <div className="inspector-summary-row">
-              <span className="inspector-label">Messages</span>
+              <span className="inspector-label">消息</span>
               <span className="inspector-value">{messageCount}</span>
             </div>
             <div className="inspector-summary-row">
-              <span className="inspector-label">Tool calls</span>
+              <span className="inspector-label">工具调用</span>
               <span className="inspector-value">{toolCalls}</span>
             </div>
             <div className="inspector-summary-row">
-              <span className="inspector-label">Risk</span>
-              <span className={`inspector-risk risk-${riskLevel}`}>{riskLevel}</span>
+              <span className="inspector-label">风险</span>
+              <span className={`inspector-risk risk-${riskLevel}`}>{riskLabel}</span>
             </div>
           </div>
 
           <div className="inspector-review-section">
-            <div className="inspector-section-title">Review Checklist</div>
+            <div className="inspector-section-title">审查清单</div>
             {checklist.map((item, i) => (
               <div key={i} className="inspector-checklist-item">
                 <span className={`inspector-check-icon status-${item.status}`}>
@@ -74,7 +75,7 @@ export function ReviewTab() {
             <path d="M9 11l3 3L22 4" />
             <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
           </svg>
-          <span>Select a session to review</span>
+          <span>请选择一个会话进行审查</span>
         </div>
       )}
     </div>

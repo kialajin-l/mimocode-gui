@@ -27,7 +27,7 @@ export function WorkflowPanel({ onSendMessage }: WorkflowPanelProps) {
         <div className="workflow-active">
           <div className="workflow-active-header">
             <h3>{activeWorkflow.name}</h3>
-            <button className="workflow-stop-btn" onClick={stopWorkflow}>
+            <button className="workflow-stop-btn" onClick={stopWorkflow} title="停止工作流">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
               </svg>
@@ -38,7 +38,7 @@ export function WorkflowPanel({ onSendMessage }: WorkflowPanelProps) {
             <div className="workflow-progress-fill" style={{ width: `${progress}%` }} />
           </div>
           <div className="workflow-progress-text">
-            Step {currentStepIndex + 1} of {activeWorkflow.steps.length}
+            第 {currentStepIndex + 1} / {activeWorkflow.steps.length} 步
           </div>
 
           <div className="workflow-steps-list">
@@ -65,7 +65,7 @@ export function WorkflowPanel({ onSendMessage }: WorkflowPanelProps) {
 
           {currentStep && (
             <div className="workflow-current-action">
-              <div className="workflow-current-label">Current step</div>
+              <div className="workflow-current-label">当前步骤</div>
               <div className="workflow-current-desc">{currentStep.description}</div>
               <button
                 className="workflow-run-step-btn"
@@ -74,7 +74,7 @@ export function WorkflowPanel({ onSendMessage }: WorkflowPanelProps) {
                   advanceStep()
                 }}
               >
-                {currentStepIndex === activeWorkflow.steps.length - 1 ? 'Run final step' : 'Run & continue'}
+                {currentStepIndex === activeWorkflow.steps.length - 1 ? '执行最后一步' : '执行并继续'}
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
                 </svg>
@@ -93,7 +93,7 @@ export function WorkflowPanel({ onSendMessage }: WorkflowPanelProps) {
           <div key={workflow.id} className="workflow-card">
             <div className="workflow-card-header">
               <h3 className="workflow-card-name">{workflow.name}</h3>
-              <span className="workflow-card-steps">{workflow.steps.length} steps</span>
+              <span className="workflow-card-steps">{workflow.steps.length} 步</span>
             </div>
             <p className="workflow-card-desc">{workflow.description}</p>
             <div className="workflow-card-preview">
@@ -115,7 +115,7 @@ export function WorkflowPanel({ onSendMessage }: WorkflowPanelProps) {
                 }
               }}
             >
-              Start workflow
+              开始工作流
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
               </svg>

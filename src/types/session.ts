@@ -6,11 +6,22 @@ export interface Message {
   content: string
   timestamp: Date
   bookmarked?: boolean
+  parts?: MessagePart[]
+}
+
+export interface MessagePart {
+  id: string
+  type: 'thinking' | 'tool' | 'metadata' | 'text' | 'error'
+  title: string
+  content: string
+  timestamp: Date
+  collapsed?: boolean
 }
 
 export interface Project {
   id: string
   name: string
+  cwd: string
   color: string
   createdAt: Date
 }

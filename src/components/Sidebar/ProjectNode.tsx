@@ -26,12 +26,17 @@ export function ProjectNode({
             <polyline points="9 18 15 12 9 6" />
           </svg>
         </span>
+        <span className="project-folder-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+            <path d="M3 7.5A2.5 2.5 0 015.5 5h4l2 2h7A2.5 2.5 0 0121 9.5v7A2.5 2.5 0 0118.5 19h-13A2.5 2.5 0 013 16.5z" />
+          </svg>
+        </span>
         <span className="project-icon-dot" style={{ background: project.color }} />
-        <span className="project-name-text">{project.name}</span>
+        <span className="project-name-text" title={project.cwd}>{project.name}</span>
         <button
           className="project-add-session"
           onClick={(e) => { e.stopPropagation(); onNewSession(project.id) }}
-          title="New session"
+          title="新建会话"
         >
           +
         </button>

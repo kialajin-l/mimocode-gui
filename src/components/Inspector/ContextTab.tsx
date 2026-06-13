@@ -14,7 +14,7 @@ export function ContextTab() {
     return (
       <div className="inspector-loading">
         <div className="inspector-spinner" />
-        <span>Loading context...</span>
+        <span>正在加载上下文...</span>
       </div>
     )
   }
@@ -26,20 +26,20 @@ export function ContextTab() {
           className={`inspector-section-tab ${activeSection === 'memory' ? 'active' : ''}`}
           onClick={() => setActiveSection('memory')}
         >
-          Memory ({memory.length})
+          记忆（{memory.length}）
         </button>
         <button
           className={`inspector-section-tab ${activeSection === 'checkpoints' ? 'active' : ''}`}
           onClick={() => setActiveSection('checkpoints')}
         >
-          Checkpoints ({checkpoints.length})
+          检查点（{checkpoints.length}）
         </button>
       </div>
 
       {activeSection === 'memory' && (
         <div className="inspector-list">
           {memory.length === 0 ? (
-            <div className="inspector-empty-small">No memory files</div>
+            <div className="inspector-empty-small">暂无记忆文件</div>
           ) : (
             memory.map((file, i) => (
               <div key={i} className="inspector-list-item">
@@ -73,7 +73,7 @@ export function ContextTab() {
       {activeSection === 'checkpoints' && (
         <div className="inspector-list">
           {checkpoints.length === 0 ? (
-            <div className="inspector-empty-small">No checkpoints</div>
+            <div className="inspector-empty-small">暂无检查点</div>
           ) : (
             checkpoints.map((file, i) => (
               <div key={i} className="inspector-list-item">

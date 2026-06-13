@@ -14,8 +14,8 @@ export function ChangesTab({ changes, onAccept, onReject }: ChangesTabProps) {
           <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
           <polyline points="14 2 14 8 20 8" />
         </svg>
-        <span>No changes yet</span>
-        <span style={{ fontSize: 11 }}>Changes will appear here</span>
+        <span>暂无变更</span>
+        <span style={{ fontSize: 11 }}>文件变更会显示在这里</span>
       </div>
     )
   }
@@ -40,7 +40,7 @@ export function ChangesTab({ changes, onAccept, onReject }: ChangesTabProps) {
                 <button
                   className="inspector-action-btn accept"
                   onClick={() => onAccept(change.file)}
-                  title="Accept"
+                  title="接受"
                 >
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                     <polyline points="20 6 9 17 4 12" />
@@ -51,7 +51,7 @@ export function ChangesTab({ changes, onAccept, onReject }: ChangesTabProps) {
                 <button
                   className="inspector-action-btn reject"
                   onClick={() => onReject(change.file)}
-                  title="Reject"
+                  title="拒绝"
                 >
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                     <line x1="18" y1="6" x2="6" y2="18" />

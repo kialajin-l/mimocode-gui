@@ -14,7 +14,7 @@ interface SessionState {
   addMessage: (sessionId: string, message: Message) => void
   updateSession: (id: string, updates: Partial<Session>) => void
   toggleMessageBookmark: (sessionId: string, messageId: string) => void
-  createProject: (name: string) => Project
+  createProject: (name: string, cwd?: string) => Project
   deleteProject: (id: string) => void
 }
 
@@ -29,14 +29,32 @@ function reviveDates(data: any) {
       updatedAt: new Date(s.updatedAt),
       messages: (s.messages || []).map((m: any) => ({
         ...m,
-        timestamp: new Date(m.timestamp)
+        timestamp: new Date(m.timestamp),
+        parts: (m.parts || []).map((part: any) => ({
+          ...part,
+          timestamp: new Date(part.timestamp)
+        }))
       })),
-      changes: s.changes || []
+      versions: (s.versions || []).map((v: any) => ({
+        ...v,
+        timestamp: new Date(v.timestamp),
+        messages: (v.messages || []).map((m: any) => ({
+          ...m,
+          timestamp: new Date(m.timestamp),
+          parts: (m.parts || []).map((part: any) => ({
+            ...part,
+            timestamp: new Date(part.timestamp)
+          }))
+        }))
+      })),
+      changes: s.changes || [],
+      tags: s.tags || []
     }))
   }
   if (data.projects) {
     data.projects = data.projects.map((p: any) => ({
       ...p,
+      cwd: p.cwd || '.',
       createdAt: new Date(p.createdAt)
     }))
   }
@@ -170,11 +188,12 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     scheduleSave()
   },
 
-  createProject: (name) => {
+  createProject: (name, cwd = '.') => {
     const projects = get().projects
     const project: Project = {
       id: crypto.randomUUID(),
       name,
+      cwd,
       color: PROJECT_COLORS[projects.length % PROJECT_COLORS.length],
       createdAt: new Date()
     }

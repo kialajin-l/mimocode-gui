@@ -67,6 +67,31 @@ describe('sessionStore', () => {
   })
 
   describe('persistence / merge', () => {
+    it('loads legacy sessions without versions safely', async () => {
+      const legacySession = {
+        id: 'legacy-1',
+        name: 'Legacy',
+        pid: null,
+        status: 'idle',
+        cwd: '/code',
+        messages: [{ id: 'm1', role: 'user', content: 'hello', timestamp: '2026-06-13T00:00:00.000Z' }],
+        projectId: null,
+        changes: [],
+        createdAt: '2026-06-13T00:00:00.000Z',
+        updatedAt: '2026-06-13T00:00:00.000Z'
+      }
+      ;(window as any).electronAPI = {
+        loadData: vi.fn().mockResolvedValue({ sessions: [legacySession], projects: [], activeSessionId: 'legacy-1' })
+      }
+
+      await useSessionStore.getState().loadData()
+
+      const session = useSessionStore.getState().sessions[0]
+      expect(session.versions).toEqual([])
+      expect(session.tags).toEqual([])
+      expect(session.messages[0].timestamp).toBeInstanceOf(Date)
+    })
+
     it('importSession merges session data with new id and timestamps', () => {
       const imported = useSessionStore.getState().importSession({
         name: 'Imported',

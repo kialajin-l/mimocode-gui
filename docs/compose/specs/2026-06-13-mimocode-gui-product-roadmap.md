@@ -15,16 +15,16 @@
 
 1. 保留 Phase 0 稳定性修复，先解决当前 GUI 的高危问题。
 2. 将安全 IPC 收敛纳入 Phase 0，不等到 Web UI 嵌入后再处理。
-3. 以嵌入 OpenCode Web UI 作为主交互路径，快速获得成熟的 session、tool、diff、terminal、theme 等体验。
+3. 以原生 MiMoCode GUI 作为主交互路径，OpenCode Web UI 仅保留为兼容、诊断和能力摸底入口。
 4. 继续摸底 `mimo acp`。如果 ACP 可用，用它获取结构化事件和控制能力。
 5. 如果 ACP 不可用，则通过 `mimo export`、`mimo session list --format json`、SQLite 和 memory 文件轮询，为右侧定制面板提供数据。
-6. 将 GUI 的差异化价值放在 OpenCode Web UI 未覆盖或不适合覆盖的部分：定制审查面板、项目上下文管理、本地窗口体验和项目启动器。
+6. 将 GUI 的差异化价值放在原生编程工作台体验：底部 prompt composer、Compose/Plan/Build、审查面板、项目上下文管理、本地窗口体验和项目启动器。
 
 ## 2. 产品定位
 
 MiMoCode GUI 不应重复实现 OpenCode Web UI 已经做好的完整交互，也不应停留在简单 CLI stdout wrapper。它的定位应调整为：
 
-> 一个面向 MiMo/OpenCode 的编程桌面工作台：主交互区复用成熟 Web UI，侧边和右侧面板承载本项目专属的审查、上下文管理和本地桌面能力。
+> 一个面向 MiMo/OpenCode 的原生编程桌面工作台：主交互区由 MiMoCode GUI 承担，OpenCode Web UI 仅作为兼容/诊断入口，侧边和右侧面板承载审查、上下文管理和本地桌面能力。
 
 核心用户：
 
@@ -122,7 +122,7 @@ Electron Main
 Renderer
   ├─ App Shell
   ├─ Project Sidebar
-  ├─ Embedded OpenCode Web UI
+  ├─ Native MiMo Workbench
   ├─ Right Inspector
   │   └─ Changes / Context / Review / Terminal
   └─ Settings / Diagnostics
@@ -136,7 +136,7 @@ MiMo/OpenCode 负责：
 
 GUI 负责：
 
-- 启动和承载 Web UI。
+- 提供原生主工作台，并在需要时启动和承载 Web UI 诊断/fallback。
 - 本地项目入口和窗口体验。
 - 安全 IPC。
 - 定制 inspector 数据整合。
@@ -149,7 +149,7 @@ GUI 负责：
 如果 `mimo acp` 能提供结构化事件、session 控制或 prompt 接口，则采用：
 
 ```text
-Embedded Web UI + ACP structured events + GUI inspector panels
+Native MiMo Workbench + ACP structured events + GUI inspector panels
 ```
 
 适合实现：
@@ -164,7 +164,7 @@ Embedded Web UI + ACP structured events + GUI inspector panels
 如果 ACP 不适合外部 GUI，则采用：
 
 ```text
-Embedded Web UI + CLI export/session list + SQLite/memory read-only polling
+Native MiMo Workbench + CLI export/session list + SQLite/memory read-only polling
 ```
 
 适合实现：
@@ -200,13 +200,13 @@ Embedded Web UI + CLI export/session list + SQLite/memory read-only polling
 
 ### Phase 1: Web UI 嵌入 MVP 与 ACP 摸底 ✅ 已完成
 
-目标：把主交互区切换为成熟的 OpenCode Web UI，而不是继续复制完整聊天工作台。
+目标：验证 `mimo serve` / OpenCode Web UI 能作为兼容与诊断 fallback，但不作为 MiMoCode GUI 的默认主交互区。
 
 范围：
 
 - 实现 `mimo serve` 启动、停止、健康状态和日志展示。
 - 从 serve 输出或配置中获取 Web UI URL。
-- 在 Electron 中嵌入 Web UI。
+- 在 Electron 中保留可选 Web UI 诊断入口，但不放在默认主工作区。
 - 增加连接失败、端口占用、MiMo 未安装、启动超时的诊断 UI。
 - 保留当前 React shell 的左侧项目入口和右侧 inspector 容器。
 - 并行运行并记录 `mimo acp --help`、启动方式、协议输出。
@@ -236,7 +236,7 @@ Embedded Web UI + CLI export/session list + SQLite/memory read-only polling
 
 ### Phase 3: 精简右侧 Inspector ✅ 已完成
 
-目标：围绕嵌入 Web UI 做一个最小可用的增量 inspector，而不是重写主交互或一次性实现全部面板。
+目标：围绕原生 MiMoCode 工作台做一个最小可用的增量 inspector，而不是依赖 OpenCode Web UI 承担主流程。
 
 实现范围（代码模式）：
 
@@ -286,7 +286,7 @@ Embedded Web UI + CLI export/session list + SQLite/memory read-only polling
 
 ### 9.1 App Shell
 
-保留桌面应用壳：左侧项目入口，中间嵌入 Web UI，右侧定制 inspector。避免重新实现 Web UI 已有的完整聊天区、工具调用区和 diff 区。
+保留桌面应用壳：左侧项目入口，中间原生 MiMo 工作区，右侧定制 inspector。Web UI 不作为默认主区域，只作为兼容/诊断入口。
 
 ### 9.2 左侧 Sidebar
 
@@ -297,7 +297,7 @@ Embedded Web UI + CLI export/session list + SQLite/memory read-only polling
 
 ### 9.3 中间主区域
 
-主区域优先显示 OpenCode Web UI。后续只有在 ACP 提供足够数据且确有必要时，才考虑自研主交互 timeline。
+主区域优先显示原生 MiMoCode 工作台，包括聊天、执行模式、权限控制和底部 prompt composer。OpenCode Web UI 仅在诊断或兼容需要时打开。
 
 ### 9.4 右侧 Inspector
 
@@ -305,7 +305,7 @@ Embedded Web UI + CLI export/session list + SQLite/memory read-only polling
 
 ### 9.5 视觉语言
 
-视觉仍应靠近 Codex Desktop：紧凑、克制、低装饰、低饱和、清晰边框和稳定布局。不要做营销式首页，也不要把 Web UI 外再包一层厚重装饰。
+视觉仍应靠近 Codex Desktop：紧凑、克制、低装饰、低饱和、清晰边框和稳定布局。不要做营销式首页，也不要把 OpenCode Web UI 当作默认产品主体。
 
 ## 10. 技术实施建议
 
@@ -368,7 +368,7 @@ src/
 | 阶段      | 现实工作量 | 说明                                     |
 | ------- | ----- | -------------------------------------- |
 | Phase 0 | 1-2 天 | 修复当前高危问题                               |
-| Phase 1 | 2-4 天 | 嵌入 Web UI、runtime 状态，并行摸底 ACP          |
+| Phase 1 | 2-4 天 | Web UI 兼容/诊断入口、runtime 状态，并行摸底 ACP     |
 | Phase 2 | 1-2 天 | ACP/CLI/SQLite 数据路线确认和复用评估             |
 | Phase 3 | 3-7 天 | 代码模式 inspector（Changes/Context/Review） |
 | Phase 4 | 2-3 天 | 安全加固和本地操作确认流                           |
@@ -380,12 +380,12 @@ src/
 
 | 风险                             | 影响               | 缓解                                                       |
 | ------------------------------ | ---------------- | -------------------------------------------------------- |
-| iframe/webview 被认为只是薄皮 wrapper | 产品差异化不足          | 将差异化放在审查 inspector 和本地桌面能力，而不是重写 Web UI                  |
+| iframe/webview 被认为只是薄皮 wrapper | 产品差异化不足          | 默认主路径改为原生 MiMoCode GUI，Web UI 只做兼容/诊断入口                  |
 | ACP 不可用                        | 无法实时获取结构化事件      | 使用 CLI export、session list、SQLite 和 memory 文件作为 fallback |
 | 直接读 SQLite 破坏数据                | 数据损坏             | 只读访问，不写库；写操作优先通过 MiMo CLI/Web UI                         |
-| Web UI 与外层 GUI 状态不同步           | UX 混乱            | 外层只显示辅助面板，不抢主流程控制权                                       |
+| Web UI 与外层 GUI 状态不同步           | UX 混乱            | 不把 Web UI 放在主流程；仅在诊断/fallback 场景使用                       |
 | IPC 权限过宽                       | 本机命令执行、文件泄露、误删修改 | Phase 0 完成安全 IPC 收敛、路径校验和确认流                             |
-| 过早自研完整主交互                      | 返工大、进度失控         | 主交互先嵌入 Web UI，后续按 ACP 能力决定是否替换                           |
+| 原生主交互能力不足                      | 用户被迫回到 Web UI    | 逐步补齐原生聊天、工具摘要、diff、终端和项目上下文，不让 Web UI 成为主路径              |
 
 ## 13. 里程碑建议
 
@@ -395,7 +395,7 @@ src/
 
 ### M1: Embedded Web UI MVP ✅
 
-输出：GUI 能启动/连接 `mimo serve` 并嵌入 OpenCode Web UI，同时完成 ACP 能力摸底记录。
+输出：GUI 能启动/连接 `mimo serve` 作为兼容/诊断入口，同时完成 ACP 能力摸底记录；默认主路径仍是原生 MiMoCode GUI。
 
 ### M2: Data Adapter Decision ✅
 
@@ -431,7 +431,7 @@ src/
 4. 优先评估代码审查自动化、任务/Memory Inspector、GitHub/CI 集成或本地运行时诊断。
 5. 每次只选择一个薄片进入实施，避免再次扩大范围。
 
-这样可以避免在不成立的 REST/SDK 假设和非核心产品方向上继续投入，同时利用 MiMo/OpenCode 已有 Web UI，把开发资源留给真正有差异化价值的桌面和技术工作流能力。
+这样可以避免在不成立的 REST/SDK 假设和非核心产品方向上继续投入，同时避免把 MiMoCode GUI 降级成 OpenCode Web UI 套壳，把开发资源留给真正有差异化价值的原生桌面和技术工作流能力。
 
 ---
 

@@ -1,8 +1,8 @@
-import { app, BrowserWindow, ipcMain, dialog } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog, IpcMainInvokeEvent } from 'electron'
 import path from 'path'
 import fs from 'fs'
 import { spawn, execFileSync, ChildProcess } from 'child_process'
-import { sendMessage, cancelMessage, getMimoPath, stopAllProcesses } from './cli-bridge'
+import { sendMessage, cancelMessage, getMimoPath, listModels, stopAllProcesses } from './cli-bridge'
 import { startMimoServe, stopMimoServe, getMimoServeStatus, onMimoServeOutput } from './mimo-process'
 import { fetchSessionList, exportSession } from './cli-data-adapter'
 import { readMemoryFiles, readCheckpoints } from './local-data-adapter'
@@ -28,6 +28,8 @@ async function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
+    frame: false,
+    autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -35,6 +37,7 @@ async function createWindow() {
       webviewTag: true
     }
   })
+  mainWindow.setMenuBarVisibility(false)
 
   const distPath = path.join(__dirname, '..', 'dist', 'index.html')
   if (fs.existsSync(distPath)) {
@@ -52,17 +55,18 @@ async function createWindow() {
   })
 }
 
-ipcMain.handle('send-message', async (_, sessionId: string, message: string, cwd?: string, model?: string, permission?: string) => {
+ipcMain.handle('send-message', async (_, sessionId: string, message: string, cwd?: string, model?: string, permission?: string, variant?: string, requestId?: string) => {
   try {
     return await new Promise((resolve) => {
       sendMessage(message, {
         sessionId,
         cwd,
         model,
+        variant,
         permission,
         onChunk: (chunk) => {
           try {
-            mainWindow?.webContents.send('message-chunk', sessionId, chunk)
+            mainWindow?.webContents.send('message-chunk', sessionId, { ...chunk, requestId })
           } catch (e) {
             console.error('[Main] Failed to send chunk:', e)
           }
@@ -95,6 +99,14 @@ ipcMain.handle('get-mimo-path', () => {
     return getMimoPath()
   } catch (err) {
     return 'mimo'
+  }
+})
+
+ipcMain.handle('list-models', () => {
+  try {
+    return { success: true, models: listModels() }
+  } catch (err) {
+    return { success: false, models: [], error: String(err) }
   }
 })
 
@@ -390,6 +402,39 @@ ipcMain.handle('open-file', async (_, filters?: { name: string; extensions: stri
   }
 })
 
+async function handleOpenDirectory(event?: IpcMainInvokeEvent) {
+  try {
+    const sourceWindow = event ? BrowserWindow.fromWebContents(event.sender) : null
+    const parentWindow = sourceWindow || mainWindow || BrowserWindow.getFocusedWindow()
+    const result = parentWindow
+      ? await dialog.showOpenDialog(parentWindow!, {
+          title: '选择项目文件夹',
+          properties: ['openDirectory', 'createDirectory']
+        })
+      : await dialog.showOpenDialog({
+          title: '选择项目文件夹',
+          properties: ['openDirectory', 'createDirectory']
+        })
+
+    if (result.canceled || result.filePaths.length === 0) {
+      return { success: false, canceled: true }
+    }
+
+    const dirPath = result.filePaths[0]
+    return {
+      success: true,
+      path: dirPath,
+      name: path.basename(dirPath)
+    }
+  } catch (err) {
+    console.error('[Main] open-directory error:', err)
+    return { success: false, error: String(err) }
+  }
+}
+
+ipcMain.handle('open-directory', handleOpenDirectory)
+ipcMain.handle('dialog-open-directory', handleOpenDirectory)
+
 ipcMain.handle('fetch-sessions', async () => {
   try {
     return { success: true, sessions: await fetchSessionList() }
@@ -417,6 +462,25 @@ ipcMain.handle('read-project-context', async (_, projectDir: string) => {
   }
 })
 
+ipcMain.handle('window-minimize', (event) => {
+  BrowserWindow.fromWebContents(event.sender)?.minimize()
+})
+
+ipcMain.handle('window-toggle-maximize', (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender)
+  if (!win) return false
+  if (win.isMaximized()) {
+    win.unmaximize()
+    return false
+  }
+  win.maximize()
+  return true
+})
+
+ipcMain.handle('window-close', (event) => {
+  BrowserWindow.fromWebContents(event.sender)?.close()
+})
+
 app.whenReady().then(createWindow)
 
 app.on('window-all-closed', () => {
@@ -437,12 +501,15 @@ ipcMain.handle('open-session-window', async (_, sessionId: string) => {
   const sessionWindow = new BrowserWindow({
     width: 1000,
     height: 700,
+    frame: false,
+    autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false
     }
   })
+  sessionWindow.setMenuBarVisibility(false)
 
   const distPath = path.join(__dirname, '..', 'dist', 'index.html')
   if (fs.existsSync(distPath)) {

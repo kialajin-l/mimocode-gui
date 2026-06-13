@@ -1,13 +1,14 @@
 interface MessageChunk {
   type: 'text' | 'tool_use' | 'tool_result' | 'thinking' | 'error' | 'metadata'
   content: string
+  requestId?: string
   toolName?: string
   toolArgs?: Record<string, unknown>
 }
 
 interface ElectronAPI {
   // Chat
-  sendMessage: (sessionId: string, message: string, cwd?: string, model?: string, permission?: string) => Promise<{
+  sendMessage: (sessionId: string, message: string, cwd?: string, model?: string, permission?: string, variant?: string, requestId?: string) => Promise<{
     success: boolean
     content?: string
     error?: string
@@ -37,6 +38,7 @@ interface ElectronAPI {
 
   // Data
   getMimoPath: () => Promise<string>
+  listModels: () => Promise<{ success: boolean; models: string[]; error?: string }>
   loadData: () => Promise<any>
   saveData: (data: any) => Promise<boolean>
 
@@ -59,6 +61,18 @@ interface ElectronAPI {
     canceled?: boolean
     error?: string
   }>
+  openDirectory: () => Promise<{
+    success: boolean
+    path?: string
+    name?: string
+    canceled?: boolean
+    error?: string
+  }>
+
+  // Window controls
+  windowMinimize: () => Promise<void>
+  windowToggleMaximize: () => Promise<boolean>
+  windowClose: () => Promise<void>
 
   // Mimo Serve
   startMimoServe: (port?: number) => Promise<{ success: boolean; url?: string; error?: string }>

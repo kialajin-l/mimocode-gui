@@ -1,18 +1,23 @@
-import { useEffect, useState, useCallback, useMemo } from 'react'
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { ThemeSwitcher } from './components/Settings/ThemeSwitcher'
 import { SessionList } from './components/Sidebar/SessionList'
 import { MessageList } from './components/Chat/MessageList'
 import { MessageInput } from './components/Chat/MessageInput'
+import { WorkbenchOverview } from './components/Chat/WorkbenchOverview'
 import { RightPanel } from './components/Panel/RightPanel'
 import { SearchBar } from './components/Search/SearchBar'
 import { ShortcutHelp } from './components/Help/ShortcutHelp'
-import { WebUIHost } from './components/WebUI/WebUIHost'
+import { PluginManager } from './components/Settings/PluginManager'
+import { WorkflowPanel } from './components/Panel/WorkflowPanel'
+import { SettingsPage } from './components/Settings/SettingsPage'
+import { useSettingsStore } from './stores/settingsStore'
+import { SideStatusCard } from './components/Status/SideStatusCard'
 import { useSession } from './hooks/useSession'
 import { useKeyboardShortcuts, setTogglePanelCallback, setSearchOpenCallback } from './hooks/useKeyboardShortcuts'
 import { useSessionStore } from './stores/sessionStore'
-import { useRuntimeStore } from './stores/runtimeStore'
 import { useI18n } from './i18n'
+import { useThemeStore } from './stores/themeStore'
 import { parseDiff } from './utils/diffParser'
 import { exportSessionToMarkdown, sessionToFilename } from './utils/exportSession'
 import { parseMarkdownToSession } from './utils/importSession'
@@ -23,15 +28,46 @@ function App() {
   const { activeSession, sendMessage, cancelMessage, updateSession } = useSession()
   const loadData = useSessionStore(s => s.loadData)
   const sessions = useSessionStore(s => s.sessions)
+  const projects = useSessionStore(s => s.projects)
   const [panelOpen, setPanelOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [shortcutHelpOpen, setShortcutHelpOpen] = useState(false)
-  const [viewMode, setViewMode] = useState<'chat' | 'webui'>('chat')
+  const [workspaceView, setWorkspaceView] = useState<'workbench' | 'plugins' | 'settings' | 'automation'>('workbench')
   const [confirmDialog, setConfirmDialog] = useState<Omit<ConfirmDialogProps, 'onConfirm' | 'onCancel'> & { onConfirm: () => void } | null>(null)
+  const [openMenu, setOpenMenu] = useState<string | null>(null)
+  const menuBarRef = useRef<HTMLDivElement>(null)
   const { t, locale, setLocale } = useI18n()
-  const syncServeStatus = useRuntimeStore(s => s.syncServeStatus)
+  const toggleTheme = useThemeStore(s => s.toggleTheme)
+  const showStatusCard = useSettingsStore(s => s.showStatusCard)
   useKeyboardShortcuts()
+
+  useEffect(() => {
+    if (!openMenu) return
+    const handleClick = (e: MouseEvent) => {
+      if (menuBarRef.current && !menuBarRef.current.contains(e.target as Node)) {
+        setOpenMenu(null)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [openMenu])
+
+  const activeProject = activeSession?.projectId
+    ? projects.find(project => project.id === activeSession.projectId)
+    : undefined
+
+  const handleWindowMinimize = useCallback(() => {
+    window.electronAPI?.windowMinimize?.()
+  }, [])
+
+  const handleWindowToggleMaximize = useCallback(() => {
+    window.electronAPI?.windowToggleMaximize?.()
+  }, [])
+
+  const handleWindowClose = useCallback(() => {
+    window.electronAPI?.windowClose?.()
+  }, [])
 
   const togglePanel = useCallback(() => {
     setPanelOpen(prev => !prev)
@@ -90,20 +126,20 @@ function App() {
     const api = window.electronAPI
     if (!api || !activeSession) return
     const cwd = activeSession.cwd || '.'
-    let diffSummary = `File: ${file}\nOperation: git checkout HEAD -- ${file}`
+    let diffSummary = `文件：${file}\n操作：git checkout HEAD -- ${file}`
     try {
       const diffResult = await api.gitFileDiff(file, cwd)
       if (diffResult?.success && diffResult.diff) {
         const lines = diffResult.diff.split('\n').slice(0, 20)
-        diffSummary += `\n\nDiff preview:\n${lines.join('\n')}${diffResult.diff.split('\n').length > 20 ? '\n...' : ''}`
+        diffSummary += `\n\nDiff 预览：\n${lines.join('\n')}${diffResult.diff.split('\n').length > 20 ? '\n...' : ''}`
       }
     } catch { /* ignore */ }
     setConfirmDialog({
       open: true,
-      title: 'Revert File Changes',
-      message: `This will discard all changes to "${file}" and restore the previous version. This action cannot be undone.`,
+      title: '还原文件更改',
+      message: `这会丢弃 "${file}" 的所有更改并恢复到上一版本，此操作不可撤销。`,
       details: diffSummary,
-      confirmLabel: 'Revert',
+      confirmLabel: '还原',
       danger: true,
       onConfirm: async () => {
         setConfirmDialog(null)
@@ -132,9 +168,17 @@ function App() {
     }
   }, [])
 
+  const handleQuickChat = useCallback(() => {
+    setWorkspaceView('workbench')
+    setOpenMenu(null)
+    setTimeout(() => {
+      const textarea = document.querySelector('.input-bar textarea') as HTMLTextAreaElement
+      textarea?.focus()
+    }, 50)
+  }, [])
+
   useEffect(() => {
     loadData()
-    syncServeStatus()
   }, [])
 
   useEffect(() => {
@@ -170,11 +214,84 @@ function App() {
           <ShortcutHelp onClose={() => setShortcutHelpOpen(false)} />
         )}
         <div className="title-bar">
-          <div className="title-bar-left">
-            <span>{t('menu.quickChat')}</span>
-            <span>{t('menu.file')}</span>
-            <span>{t('menu.edit')}</span>
-            <span>{t('menu.view')}</span>
+          <div className="title-bar-left" ref={menuBarRef}>
+            <span className="title-brand">MiMoCode</span>
+            <span
+              className={`menu-clickable ${openMenu === 'quickChat' ? 'active' : ''}`}
+              onClick={handleQuickChat}
+            >
+              {t('menu.quickChat')}
+            </span>
+            <span
+              className={`menu-clickable ${openMenu === 'file' ? 'active' : ''}`}
+              onClick={() => setOpenMenu(openMenu === 'file' ? null : 'file')}
+            >
+              {t('menu.file')}
+              {openMenu === 'file' && (
+                <div className="menu-dropdown" onClick={e => e.stopPropagation()}>
+                  <button
+                    className="menu-dropdown-item"
+                    disabled={!activeSession}
+                    onClick={() => { handleExportSession(); setOpenMenu(null) }}
+                  >
+                    {t('menu.exportSession')}
+                  </button>
+                  <button
+                    className="menu-dropdown-item"
+                    onClick={() => { handleImportSession(); setOpenMenu(null) }}
+                  >
+                    {t('menu.importSession')}
+                  </button>
+                  <div className="menu-dropdown-separator" />
+                  <button
+                    className="menu-dropdown-item"
+                    onClick={() => { handleWindowClose(); setOpenMenu(null) }}
+                  >
+                    {t('menu.exit')}
+                  </button>
+                </div>
+              )}
+            </span>
+            <span
+              className={`menu-clickable ${openMenu === 'edit' ? 'active' : ''}`}
+              onClick={() => setOpenMenu(openMenu === 'edit' ? null : 'edit')}
+            >
+              {t('menu.edit')}
+              {openMenu === 'edit' && (
+                <div className="menu-dropdown" onClick={e => e.stopPropagation()}>
+                  <div className="menu-dropdown-disabled">{t('menu.editTooltip')}</div>
+                </div>
+              )}
+            </span>
+            <span
+              className={`menu-clickable ${openMenu === 'view' ? 'active' : ''}`}
+              onClick={() => setOpenMenu(openMenu === 'view' ? null : 'view')}
+            >
+              {t('menu.view')}
+              {openMenu === 'view' && (
+                <div className="menu-dropdown" onClick={e => e.stopPropagation()}>
+                  <button
+                    className="menu-dropdown-item"
+                    onClick={() => { setPanelOpen(p => !p); setOpenMenu(null) }}
+                  >
+                    {t('menu.togglePanel')}
+                  </button>
+                  <button
+                    className="menu-dropdown-item"
+                    onClick={() => { toggleTheme(); setOpenMenu(null) }}
+                  >
+                    {t('menu.themeToggle')}
+                  </button>
+                  <div className="menu-dropdown-separator" />
+                  <button
+                    className="menu-dropdown-item"
+                    onClick={() => { setWorkspaceView('plugins'); setOpenMenu(null) }}
+                  >
+                    {t('menu.pluginManager')}
+                  </button>
+                </div>
+              )}
+            </span>
             <span
               className="menu-clickable"
               onClick={() => setShortcutHelpOpen(true)}
@@ -190,7 +307,18 @@ function App() {
             >
               {locale === 'zh' ? 'EN' : '中'}
             </button>
-            {t('app.title')}
+            <span>{t('app.title')}</span>
+            <div className="window-controls">
+              <button type="button" onClick={handleWindowMinimize} aria-label="最小化">
+                <svg viewBox="0 0 12 12"><path d="M2 6.5h8" /></svg>
+              </button>
+              <button type="button" onClick={handleWindowToggleMaximize} aria-label="最大化">
+                <svg viewBox="0 0 12 12"><rect x="2.5" y="2.5" width="7" height="7" rx="1" /></svg>
+              </button>
+              <button type="button" className="close" onClick={handleWindowClose} aria-label="关闭">
+                <svg viewBox="0 0 12 12"><path d="M3 3l6 6M9 3L3 9" /></svg>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -207,34 +335,39 @@ function App() {
 
             <div className="sidebar-scroll">
               <div className="sidebar-section-label">{t('sidebar.quickAccess')}</div>
-              <button className="quick-item">
+              <button className="quick-item" onClick={() => setSearchOpen(true)}>
                 <span className="quick-icon">
                   <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 </span>
                 {t('sidebar.search')}
               </button>
-              <button className="quick-item">
+              <button
+                className={`quick-item ${workspaceView === 'plugins' ? 'active' : ''}`}
+                onClick={() => setWorkspaceView('plugins')}
+              >
                 <span className="quick-icon">
                   <svg viewBox="0 0 24 24"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/><line x1="12" y1="22" x2="12" y2="15.5"/><polyline points="22 8.5 12 15.5 2 8.5"/></svg>
                 </span>
                 {t('sidebar.plugins')}
               </button>
-              <button className="quick-item">
+              <button
+                className={`quick-item ${workspaceView === 'automation' ? 'active' : ''}`}
+                onClick={() => setWorkspaceView(workspaceView === 'automation' ? 'workbench' : 'automation')}
+              >
                 <span className="quick-icon">
                   <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                 </span>
                 {t('sidebar.automation')}
               </button>
 
-              <div className="sidebar-section-label" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingRight: 16 }}>
-                {t('sidebar.projects')}
-              </div>
-
               <SessionList />
             </div>
 
             <div className="sidebar-bottom">
-              <button className="settings-item">
+              <button
+                className={`settings-item ${workspaceView === 'settings' ? 'active' : ''}`}
+                onClick={() => setWorkspaceView(workspaceView === 'settings' ? 'workbench' : 'settings')}
+              >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
                 {t('sidebar.settings')}
               </button>
@@ -245,22 +378,23 @@ function App() {
             <header className="top-bar">
               <div className="top-bar-left">
                 <button
-                  className={`view-toggle-btn ${viewMode === 'chat' ? 'active' : ''}`}
-                  onClick={() => setViewMode('chat')}
-                  title="Chat"
+                  className={`view-toggle-btn ${workspaceView === 'workbench' ? 'active' : ''}`}
+                  onClick={() => setWorkspaceView('workbench')}
+                  title="工作台"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                 </button>
-                <button
-                  className={`view-toggle-btn ${viewMode === 'webui' ? 'active' : ''}`}
-                  onClick={() => setViewMode('webui')}
-                  title="Web UI"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-                </button>
                 <span className="session-breadcrumb">
-                  {viewMode === 'webui' ? 'Web UI' : (activeSession?.name || t('app.title'))}
+                  {workspaceView === 'plugins' ? '插件' : workspaceView === 'settings' ? '设置' : workspaceView === 'automation' ? '自动化' : (activeSession?.name || t('app.title'))}
                 </span>
+                {workspaceView === 'workbench' && activeSession && (
+                  <WorkbenchOverview
+                    sessionName={activeSession.name}
+                    status={activeSession.status}
+                    messages={activeSession.messages}
+                    cwd={activeSession.cwd}
+                  />
+                )}
               </div>
               <div className="top-bar-right">
                 <button
@@ -290,23 +424,38 @@ function App() {
               </div>
             </header>
 
-            <div className="chat-area">
-              {viewMode === 'webui' ? (
-                <WebUIHost />
+            <div className={`chat-area ${workspaceView === 'plugins' || workspaceView === 'settings' || workspaceView === 'automation' ? 'workspace-page-area' : ''}`}>
+              {workspaceView === 'plugins' ? (
+                <PluginManager onClose={() => setWorkspaceView('workbench')} />
+              ) : workspaceView === 'settings' ? (
+                <SettingsPage onClose={() => setWorkspaceView('workbench')} />
+              ) : workspaceView === 'automation' ? (
+                <WorkflowPanel onSendMessage={sendMessage} />
               ) : activeSession ? (
-                <MessageList messages={activeSession.messages} sessionId={activeSession.id} />
+                <MessageList
+                  messages={activeSession.messages}
+                  sessionId={activeSession.id}
+                  isRunning={activeSession.status === 'running'}
+                />
               ) : (
-                <div className="welcome">
+                <div className="welcome workbench-welcome">
                   <div className="welcome-illustration">
                     <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
                   </div>
+                  <span className="welcome-kicker">原生 MiMo 工作台</span>
                   <h2>{t('welcome.title')}</h2>
                   <p>{t('welcome.subtitle')}</p>
+                  <div className="welcome-mode-row">
+                    <span>Compose：组织想法</span>
+                    <span>Plan：规划变更</span>
+                    <span>Build：安全构建</span>
+                  </div>
+                  <p className="welcome-footnote">直接在底部输入任务即可开始；没有会话时会自动创建。</p>
                 </div>
               )}
             </div>
 
-            {viewMode === 'chat' && (
+            {workspaceView === 'workbench' && (
             <div className="input-bar">
               <div className="input-wrapper">
                 <MessageInput
@@ -317,6 +466,7 @@ function App() {
               </div>
             </div>
             )}
+            {showStatusCard && <SideStatusCard session={activeSession} project={activeProject} />}
           </main>
 
           <RightPanel

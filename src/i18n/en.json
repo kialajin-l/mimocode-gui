@@ -7,7 +7,14 @@
     "file": "File",
     "edit": "Edit",
     "view": "View",
-    "help": "Help"
+    "help": "Help",
+    "exportSession": "Export Session",
+    "importSession": "Import Session",
+    "exit": "Exit",
+    "togglePanel": "Toggle Right Panel",
+    "themeToggle": "Toggle Theme",
+    "pluginManager": "Plugin Manager",
+    "editTooltip": "Undo/Redo/Find coming soon"
   },
   "sidebar": {
     "sessions": "Sessions",
@@ -42,7 +49,7 @@
   "panel": {
     "review": "Review",
     "terminal": "Terminal",
-    "versions": "Versions"
+    "versions": "Session Versions"
   },
   "review": {
     "empty": "No review content",
@@ -59,10 +66,10 @@
     "notAvailable": "Terminal not available (browser mode)"
   },
   "version": {
-    "title": "Version History",
-    "saveVersion": "Save version",
-    "versionLabel": "Version label (optional)",
-    "empty": "No saved versions",
+    "title": "Session Version History",
+    "saveVersion": "Save session version",
+    "versionLabel": "Session version label (optional)",
+    "empty": "No saved session versions",
     "restore": "Restore",
     "messages": "{{count}} messages"
   },

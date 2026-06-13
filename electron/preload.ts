@@ -12,8 +12,8 @@ function safeInvoke(channel: string, ...args: any[]): Promise<any> {
 
 contextBridge.exposeInMainWorld('electronAPI', {
   // Chat messaging
-  sendMessage: (sessionId: string, message: string, cwd?: string, model?: string, permission?: string) =>
-    safeInvoke('send-message', sessionId, message, cwd, model, permission),
+  sendMessage: (sessionId: string, message: string, cwd?: string, model?: string, permission?: string, variant?: string, requestId?: string) =>
+    safeInvoke('send-message', sessionId, message, cwd, model, permission, variant, requestId),
 
   cancelMessage: (sessionId: string) =>
     safeInvoke('cancel-message', sessionId),
@@ -80,6 +80,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Data persistence
   getMimoPath: () => safeInvoke('get-mimo-path'),
+  listModels: () => safeInvoke('list-models'),
   loadData: () => safeInvoke('load-data'),
   saveData: (data: any) => safeInvoke('save-data', data),
 
@@ -96,6 +97,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // File operations
   readFile: (filePath: string) => safeInvoke('read-file', filePath),
   openFile: (filters?: { name: string; extensions: string[] }[]) => safeInvoke('open-file', filters),
+  openDirectory: async () => {
+    const result = await safeInvoke('open-directory')
+    if (result?.success || !String(result?.error || '').includes('No handler registered')) return result
+    return safeInvoke('dialog-open-directory')
+  },
+
+  // Window controls
+  windowMinimize: () => safeInvoke('window-minimize'),
+  windowToggleMaximize: () => safeInvoke('window-toggle-maximize'),
+  windowClose: () => safeInvoke('window-close'),
 
   // Mimo Serve
   startMimoServe: (port?: number) => safeInvoke('mimo-serve-start', port),

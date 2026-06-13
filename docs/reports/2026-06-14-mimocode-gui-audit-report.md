@@ -19,36 +19,36 @@
 
 ## 2. 构建与测试验证
 
-| 项目 | 结果 |
-|------|------|
-| `npm run build` | ✅ 通过（534 modules, 2.23s） |
-| `npm run build:electron` | ✅ 通过 |
-| `npm test -- --run` | ✅ 21/21 通过（4 个测试文件） |
+| 项目                       | 结果                       |
+| ------------------------ | ------------------------ |
+| `npm run build`          | ✅ 通过（534 modules, 2.23s） |
+| `npm run build:electron` | ✅ 通过                     |
+| `npm test -- --run`      | ✅ 21/21 通过（4 个测试文件）      |
 
 ---
 
 ## 3. 入口联通矩阵
 
-| 区域 | 功能入口 | 状态 | 证据位置 | 问题说明 |
-|------|---------|------|---------|---------|
-| 顶部栏 | 快速对话 | ❌ | App.tsx:191 | 纯 span，无 onClick |
-| 顶部栏 | 文件 | ❌ | App.tsx:192 | 纯 span，无 onClick |
-| 顶部栏 | 编辑 | ❌ | App.tsx:193 | 纯 span，无 onClick |
-| 顶部栏 | 视图 | ❌ | App.tsx:194 | 纯 span，无 onClick |
-| 顶部栏 | 帮助 | ✅ | App.tsx:197 | 打开快捷键帮助面板 |
-| 侧边栏 | 搜索 | ✅ | App.tsx:238 | 打开全局搜索 |
-| 侧边栏 | 插件 | ⚠️ | pluginStore.ts:43-58 | 读 localStorage，无真实插件目录扫描 |
-| 侧边栏 | 自动化 | ❌ | App.tsx:253 | 无 onClick，死按钮 |
-| 侧边栏 | 设置 | ❌ | App.tsx:264 | 无 onClick，无设置页面 |
-| 输入框 | 模型选择 | ✅ | MessageInput.tsx:56 | 从 CLI 获取真实模型列表 |
-| 输入框 | 权限控制 | ✅ | MessageInput.tsx:66 | 传递给 CLI |
-| 输入框 | Compose/Plan/Build | ⚠️ | MessageInput.tsx:68 | 作为 prompt 前缀，非独立模式 |
-| 输入框 | `/` 命令 | ❌ | MessageInput.tsx | 无 slash 命令菜单 |
-| 右侧面板 | Inspector | ✅ | InspectorPanel.tsx | Changes/Context/Review 可用 |
-| 右侧面板 | 终端 | ✅ | RightPanel.tsx | 真实命令执行 |
-| 右侧面板 | 版本历史 | ✅ | VersionHistory.tsx | 保存/恢复可用 |
-| 右侧面板 | 书签 | ✅ | BookmarksPanel.tsx | 书签管理可用 |
-| 状态卡 | SideStatusCard | ⚠️ | SideStatusCard.tsx | 部分硬编码数据 |
+| 区域   | 功能入口               | 状态  | 证据位置                 | 问题说明                      |
+| ---- | ------------------ | --- | -------------------- | ------------------------- |
+| 顶部栏  | 快速对话               | ❌   | App.tsx:191          | 纯 span，无 onClick          |
+| 顶部栏  | 文件                 | ❌   | App.tsx:192          | 纯 span，无 onClick          |
+| 顶部栏  | 编辑                 | ❌   | App.tsx:193          | 纯 span，无 onClick          |
+| 顶部栏  | 视图                 | ❌   | App.tsx:194          | 纯 span，无 onClick          |
+| 顶部栏  | 帮助                 | ✅   | App.tsx:197          | 打开快捷键帮助面板                 |
+| 侧边栏  | 搜索                 | ✅   | App.tsx:238          | 打开全局搜索                    |
+| 侧边栏  | 插件                 | ⚠️  | pluginStore.ts:43-58 | 读 localStorage，无真实插件目录扫描  |
+| 侧边栏  | 自动化                | ❌   | App.tsx:253          | 无 onClick，死按钮             |
+| 侧边栏  | 设置                 | ❌   | App.tsx:264          | 无 onClick，无设置页面           |
+| 输入框  | 模型选择               | ✅   | MessageInput.tsx:56  | 从 CLI 获取真实模型列表            |
+| 输入框  | 权限控制               | ✅   | MessageInput.tsx:66  | 传递给 CLI                   |
+| 输入框  | Compose/Plan/Build | ⚠️  | MessageInput.tsx:68  | 作为 prompt 前缀，非独立模式        |
+| 输入框  | `/` 命令             | ❌   | MessageInput.tsx     | 无 slash 命令菜单              |
+| 右侧面板 | Inspector          | ✅   | InspectorPanel.tsx   | Changes/Context/Review 可用 |
+| 右侧面板 | 终端                 | ✅   | RightPanel.tsx       | 真实命令执行                    |
+| 右侧面板 | 版本历史               | ✅   | VersionHistory.tsx   | 保存/恢复可用                   |
+| 右侧面板 | 书签                 | ✅   | BookmarksPanel.tsx   | 书签管理可用                    |
+| 状态卡  | SideStatusCard     | ⚠️  | SideStatusCard.tsx   | 部分硬编码数据                   |
 
 ---
 
@@ -126,15 +126,15 @@
 
 ## 6. 建议项
 
-| 问题 | 位置 | 说明 |
-|------|------|------|
-| 顶部菜单需实现或隐藏 | App.tsx:191-194 | 至少禁用或移除无效项 |
-| 自动化需接入或移除 | workflowStore.ts | WorkflowPanel 为死代码，需决定去向 |
-| 插件需扫描真实目录 | pluginStore.ts | 应读 mimo plugin 目录 |
-| `/` 命令需接入真实命令源 | MessageInput.tsx | 至少接入 CLI 命令列表 |
-| gitDiffStat IPC 无调用方 | main.ts:290 | 已暴露但无 renderer 使用 |
-| 需添加真实设置页面 | 无 | 至少包含主题/模型/快捷键配置 |
-| SideStatusCard 数据应动态化 | SideStatusCard.tsx | 从 CLI/会话获取真实状态 |
+| 问题                    | 位置                 | 说明                       |
+| --------------------- | ------------------ | ------------------------ |
+| 顶部菜单需实现或隐藏            | App.tsx:191-194    | 至少禁用或移除无效项               |
+| 自动化需接入或移除             | workflowStore.ts   | WorkflowPanel 为死代码，需决定去向 |
+| 插件需扫描真实目录             | pluginStore.ts     | 应读 mimo plugin 目录        |
+| `/` 命令需接入真实命令源        | MessageInput.tsx   | 至少接入 CLI 命令列表            |
+| gitDiffStat IPC 无调用方  | main.ts:290        | 已暴露但无 renderer 使用        |
+| 需添加真实设置页面             | 无                  | 至少包含主题/模型/快捷键配置          |
+| SideStatusCard 数据应动态化 | SideStatusCard.tsx | 从 CLI/会话获取真实状态           |
 
 ---
 

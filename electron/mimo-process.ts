@@ -3,6 +3,15 @@ import path from 'path'
 import fs from 'fs'
 
 function findMimoBin(): string {
+  const fromShim = (shimPath: string) => {
+    const shimDir = path.dirname(shimPath)
+    const candidates = [
+      path.join(shimDir, 'node_modules', '@mimo-ai', 'mimocode-windows-x64', 'bin', 'mimo.exe'),
+      path.join(shimDir, 'node_modules', '@mimo-ai', 'cli', 'node_modules', '@mimo-ai', 'mimocode-windows-x64', 'bin', 'mimo.exe')
+    ]
+    return candidates.find(candidate => fs.existsSync(candidate)) || null
+  }
+
   const locations = [
     path.join(process.env.APPDATA || '', '..', 'Local', 'npm', 'node_modules', '@mimo-ai', 'mimocode-windows-x64', 'bin', 'mimo.exe'),
     path.join(process.env.APPDATA || '', 'npm', 'node_modules', '@mimo-ai', 'mimocode-windows-x64', 'bin', 'mimo.exe'),
@@ -13,8 +22,12 @@ function findMimoBin(): string {
   }
   try {
     const result = process.platform === 'win32'
-      ? execSync('where mimo', { encoding: 'utf-8', timeout: 3000 }).trim().split('\n')[0]
+      ? execSync('where mimo 2>nul || where mimo.cmd 2>nul || where mimo.exe', { encoding: 'utf-8', timeout: 3000 }).trim().split(/\r?\n/)[0]
       : execSync('which mimo', { encoding: 'utf-8', timeout: 3000 }).trim()
+    if (process.platform === 'win32') {
+      const exe = fromShim(result)
+      if (exe) return exe
+    }
     if (result && fs.existsSync(result)) return result
   } catch {}
   return 'mimo'

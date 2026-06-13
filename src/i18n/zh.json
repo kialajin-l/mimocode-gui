@@ -7,7 +7,14 @@
     "file": "文件",
     "edit": "编辑",
     "view": "视图",
-    "help": "帮助"
+    "help": "帮助",
+    "exportSession": "导出会话",
+    "importSession": "导入会话",
+    "exit": "退出",
+    "togglePanel": "切换右侧面板",
+    "themeToggle": "主题切换",
+    "pluginManager": "插件管理",
+    "editTooltip": "后续接入撤销/重做/查找"
   },
   "sidebar": {
     "sessions": "会话",
@@ -42,7 +49,7 @@
   "panel": {
     "review": "审查",
     "terminal": "终端",
-    "versions": "版本"
+    "versions": "会话版本"
   },
   "review": {
     "empty": "暂无审查内容",
@@ -59,10 +66,10 @@
     "notAvailable": "终端不可用（浏览器模式）"
   },
   "version": {
-    "title": "版本历史",
-    "saveVersion": "保存版本",
-    "versionLabel": "版本标签（可选）",
-    "empty": "暂无保存的版本",
+    "title": "会话版本历史",
+    "saveVersion": "保存会话版本",
+    "versionLabel": "会话版本标签（可选）",
+    "empty": "暂无保存的会话版本",
     "restore": "恢复",
     "messages": "{{count}} 条消息"
   },

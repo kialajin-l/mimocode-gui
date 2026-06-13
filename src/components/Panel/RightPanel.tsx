@@ -47,13 +47,13 @@ export function RightPanel({ open, changes, sessionId, onAcceptChange, onRejectC
               className={`panel-tab ${codeTab === 'inspector' ? 'active' : ''}`}
               onClick={() => setCodeTab('inspector')}
             >
-              Inspector
+              检查器
             </button>
             <button
               className={`panel-tab ${codeTab === 'versions' ? 'active' : ''}`}
               onClick={() => setCodeTab('versions')}
             >
-              版本
+              会话版本
             </button>
             <button
               className={`panel-tab ${codeTab === 'bookmarks' ? 'active' : ''}`}
@@ -93,7 +93,7 @@ interface TerminalLine {
 
 function TerminalPanel() {
   const [lines, setLines] = useState<TerminalLine[]>([
-    { type: 'output', content: 'Ready. Type a command and press Enter.' }
+    { type: 'output', content: '就绪。输入命令后按回车执行。' }
   ])
   const [input, setInput] = useState('')
   const [isRunning, setIsRunning] = useState(false)
@@ -113,7 +113,7 @@ function TerminalPanel() {
     const cleanupExit = api.onTerminalExit(id, (code) => {
       setIsRunning(false)
       if (code !== 0 && code !== null) {
-        setLines(prev => [...prev, { type: 'exit', content: `Process exited with code ${code}` }])
+        setLines(prev => [...prev, { type: 'exit', content: `进程退出，代码 ${code}` }])
       }
     })
 
@@ -143,7 +143,7 @@ function TerminalPanel() {
 
     const api = window.electronAPI
     if (!api) {
-      setLines(prev => [...prev, { type: 'error', content: 'Terminal not available (browser mode)' }])
+      setLines(prev => [...prev, { type: 'error', content: '终端不可用（浏览器模式）' }])
       return
     }
 
@@ -180,7 +180,7 @@ function TerminalPanel() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleExecute()}
-            placeholder={isRunning ? 'Running...' : ''}
+            placeholder={isRunning ? '运行中...' : ''}
             disabled={isRunning}
             autoFocus
           />
