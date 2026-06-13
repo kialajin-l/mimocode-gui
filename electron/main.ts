@@ -6,6 +6,10 @@ import { sendMessage, cancelMessage, getMimoPath, stopAllProcesses } from './cli
 import { startMimoServe, stopMimoServe, getMimoServeStatus, onMimoServeOutput } from './mimo-process'
 import { fetchSessionList, exportSession } from './cli-data-adapter'
 import { readMemoryFiles, readCheckpoints } from './local-data-adapter'
+import {
+  validateFilePath, validateCwd, isSensitiveFile,
+  isDangerousCommand, logOperation
+} from './security-ipc'
 
 const DATA_DIR = app.getPath('userData')
 const DATA_FILE = path.join(DATA_DIR, 'sessions.json')
@@ -172,33 +176,31 @@ ipcMain.handle('mimo-serve-output', () => {
 // Terminal execution
 const terminalProcesses = new Map<string, ChildProcess>()
 
-// Dangerous commands that require confirmation
-const DANGEROUS_COMMANDS = ['rm -rf', 'rmdir /s', 'del /f', 'format', 'mkfs', '> /dev/sda']
-
 ipcMain.handle('terminal-execute', (_, id: string, command: string, cwd?: string) => {
   try {
-    // Validate cwd - must be a relative path or within allowed directories
-    const resolvedCwd = cwd || process.cwd()
-    if (cwd && path.isAbsolute(cwd) && !cwd.startsWith(process.cwd())) {
-      return { success: false, error: 'Access denied: cwd outside project directory' }
+    const cwdResult = validateCwd(cwd)
+    if (!cwdResult.valid) {
+      logOperation('security-block', { command, reason: cwdResult.error! })
+      return { success: false, error: cwdResult.error }
     }
 
-    // Check for dangerous commands
-    const lowerCmd = command.toLowerCase()
-    if (DANGEROUS_COMMANDS.some(d => lowerCmd.includes(d))) {
-      return { success: false, error: 'Blocked: potentially dangerous command' }
+    const dangerCheck = isDangerousCommand(command)
+    if (dangerCheck.dangerous) {
+      logOperation('security-block', { command, reason: dangerCheck.reason! })
+      return { success: false, error: `Blocked: ${dangerCheck.reason}` }
     }
+
+    logOperation('terminal-execute', { id, command, cwd: cwdResult.resolved })
 
     const isWin = process.platform === 'win32'
     const child = spawn(isWin ? 'cmd.exe' : 'bash', isWin ? ['/c', command] : ['-c', command], {
-      cwd: resolvedCwd,
+      cwd: cwdResult.resolved,
       env: { ...process.env },
       stdio: ['pipe', 'pipe', 'pipe']
     })
 
     terminalProcesses.set(id, child)
 
-    // Auto-kill after 60 seconds
     const timeout = setTimeout(() => {
       if (!child.killed) {
         child.kill()
@@ -245,8 +247,28 @@ ipcMain.handle('terminal-kill', (_, id: string) => {
 // Git diff detection
 ipcMain.handle('git-diff', async (_, cwd?: string) => {
   try {
-    const dir = cwd || process.cwd()
-    const diff = execFileSync('git', ['diff'], { cwd: dir, encoding: 'utf-8', timeout: 5000 })
+    const cwdResult = validateCwd(cwd)
+    if (!cwdResult.valid) {
+      return { success: false, diff: '', error: cwdResult.error }
+    }
+    const diff = execFileSync('git', ['diff'], { cwd: cwdResult.resolved, encoding: 'utf-8', timeout: 5000 })
+    return { success: true, diff }
+  } catch (err) {
+    return { success: false, diff: '', error: String(err) }
+  }
+})
+
+ipcMain.handle('git-file-diff', async (_, file: string, cwd?: string) => {
+  try {
+    const fileValidation = validateFilePath(file)
+    if (!fileValidation.valid) {
+      return { success: false, diff: '', error: fileValidation.error }
+    }
+    const cwdResult = validateCwd(cwd)
+    if (!cwdResult.valid) {
+      return { success: false, diff: '', error: cwdResult.error }
+    }
+    const diff = execFileSync('git', ['diff', '--', file], { cwd: cwdResult.resolved, encoding: 'utf-8', timeout: 5000 })
     return { success: true, diff }
   } catch (err) {
     return { success: false, diff: '', error: String(err) }
@@ -255,39 +277,30 @@ ipcMain.handle('git-diff', async (_, cwd?: string) => {
 
 ipcMain.handle('git-diff-stat', async (_, cwd?: string) => {
   try {
-    const dir = cwd || process.cwd()
-    const stat = execFileSync('git', ['diff', '--stat'], { cwd: dir, encoding: 'utf-8', timeout: 5000 })
+    const cwdResult = validateCwd(cwd)
+    if (!cwdResult.valid) {
+      return { success: false, stat: '', error: cwdResult.error }
+    }
+    const stat = execFileSync('git', ['diff', '--stat'], { cwd: cwdResult.resolved, encoding: 'utf-8', timeout: 5000 })
     return { success: true, stat }
   } catch (err) {
     return { success: false, stat: '', error: String(err) }
   }
 })
 
-// Path validation helper for git operations
-function validateGitPath(file: string, cwd?: string): { valid: boolean; error?: string } {
-  // Reject absolute paths
-  if (path.isAbsolute(file)) {
-    return { valid: false, error: 'Absolute paths not allowed' }
-  }
-  // Reject path traversal
-  if (file.includes('..')) {
-    return { valid: false, error: 'Path traversal not allowed' }
-  }
-  // Reject empty or very long paths
-  if (!file || file.length > 500) {
-    return { valid: false, error: 'Invalid file path' }
-  }
-  return { valid: true }
-}
-
 ipcMain.handle('git-accept', async (_, file: string, cwd?: string) => {
   try {
-    const validation = validateGitPath(file, cwd)
-    if (!validation.valid) {
-      return { success: false, error: validation.error }
+    const fileValidation = validateFilePath(file)
+    if (!fileValidation.valid) {
+      logOperation('security-block', { operation: 'git-accept', file, reason: fileValidation.error! })
+      return { success: false, error: fileValidation.error }
     }
-    const dir = cwd || process.cwd()
-    execFileSync('git', ['add', file], { cwd: dir, timeout: 5000 })
+    const cwdResult = validateCwd(cwd)
+    if (!cwdResult.valid) {
+      return { success: false, error: cwdResult.error }
+    }
+    logOperation('git-accept', { file, cwd: cwdResult.resolved })
+    execFileSync('git', ['add', file], { cwd: cwdResult.resolved, timeout: 5000 })
     return { success: true }
   } catch (err) {
     return { success: false, error: String(err) }
@@ -296,12 +309,17 @@ ipcMain.handle('git-accept', async (_, file: string, cwd?: string) => {
 
 ipcMain.handle('git-reject', async (_, file: string, cwd?: string) => {
   try {
-    const validation = validateGitPath(file, cwd)
-    if (!validation.valid) {
-      return { success: false, error: validation.error }
+    const fileValidation = validateFilePath(file)
+    if (!fileValidation.valid) {
+      logOperation('security-block', { operation: 'git-reject', file, reason: fileValidation.error! })
+      return { success: false, error: fileValidation.error }
     }
-    const dir = cwd || process.cwd()
-    execFileSync('git', ['checkout', 'HEAD', '--', file], { cwd: dir, timeout: 5000 })
+    const cwdResult = validateCwd(cwd)
+    if (!cwdResult.valid) {
+      return { success: false, error: cwdResult.error }
+    }
+    logOperation('git-reject', { file, cwd: cwdResult.resolved })
+    execFileSync('git', ['checkout', 'HEAD', '--', file], { cwd: cwdResult.resolved, timeout: 5000 })
     return { success: true }
   } catch (err) {
     return { success: false, error: String(err) }
@@ -331,19 +349,19 @@ ipcMain.handle('save-file', async (_, content: string, defaultName: string) => {
 // File operations
 ipcMain.handle('read-file', async (_, filePath: string) => {
   try {
-    // Path validation - only allow reading from user data directory or current project
     const resolved = path.resolve(filePath)
     const userDataDir = app.getPath('userData')
     const projectDir = process.cwd()
     
-    if (!resolved.startsWith(userDataDir) && !resolved.startsWith(projectDir)) {
+    // Check containment with path separator to prevent prefix matching
+    const inUserData = resolved.startsWith(userDataDir + path.sep) || resolved === userDataDir
+    const inProject = resolved.startsWith(projectDir + path.sep) || resolved === projectDir
+    
+    if (!inUserData && !inProject) {
       return { success: false, error: 'Access denied: path outside allowed directories' }
     }
 
-    // Reject sensitive files
-    const basename = path.basename(resolved).toLowerCase()
-    const sensitivePatterns = ['.env', 'credentials', 'secret', 'password', 'token', '.key', '.pem']
-    if (sensitivePatterns.some(p => basename.includes(p))) {
+    if (isSensitiveFile(resolved)) {
       return { success: false, error: 'Access denied: sensitive file' }
     }
 

@@ -16,6 +16,7 @@ import { useI18n } from './i18n'
 import { parseDiff } from './utils/diffParser'
 import { exportSessionToMarkdown, sessionToFilename } from './utils/exportSession'
 import { parseMarkdownToSession } from './utils/importSession'
+import { ConfirmDialog, ConfirmDialogProps } from './components/Security/ConfirmDialog'
 import './App.css'
 
 function App() {
@@ -27,6 +28,7 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('')
   const [shortcutHelpOpen, setShortcutHelpOpen] = useState(false)
   const [viewMode, setViewMode] = useState<'chat' | 'webui'>('chat')
+  const [confirmDialog, setConfirmDialog] = useState<Omit<ConfirmDialogProps, 'onConfirm' | 'onCancel'> & { onConfirm: () => void } | null>(null)
   const { t, locale, setLocale } = useI18n()
   const syncServeStatus = useRuntimeStore(s => s.syncServeStatus)
   useKeyboardShortcuts()
@@ -87,8 +89,28 @@ function App() {
   const handleRejectChange = useCallback(async (file: string) => {
     const api = window.electronAPI
     if (!api || !activeSession) return
-    await api.gitReject(file, activeSession.cwd || '.')
-    refreshChanges()
+    const cwd = activeSession.cwd || '.'
+    let diffSummary = `File: ${file}\nOperation: git checkout HEAD -- ${file}`
+    try {
+      const diffResult = await api.gitFileDiff(file, cwd)
+      if (diffResult?.success && diffResult.diff) {
+        const lines = diffResult.diff.split('\n').slice(0, 20)
+        diffSummary += `\n\nDiff preview:\n${lines.join('\n')}${diffResult.diff.split('\n').length > 20 ? '\n...' : ''}`
+      }
+    } catch { /* ignore */ }
+    setConfirmDialog({
+      open: true,
+      title: 'Revert File Changes',
+      message: `This will discard all changes to "${file}" and restore the previous version. This action cannot be undone.`,
+      details: diffSummary,
+      confirmLabel: 'Revert',
+      danger: true,
+      onConfirm: async () => {
+        setConfirmDialog(null)
+        await api.gitReject(file, cwd)
+        refreshChanges()
+      }
+    })
   }, [activeSession, refreshChanges])
 
   const handleExportSession = useCallback(async () => {
@@ -127,6 +149,12 @@ function App() {
   return (
     <ErrorBoundary>
       <div className="app">
+        {confirmDialog && (
+          <ConfirmDialog
+            {...confirmDialog}
+            onCancel={() => setConfirmDialog(null)}
+          />
+        )}
         {searchOpen && (
           <SearchBar
             query={searchQuery}

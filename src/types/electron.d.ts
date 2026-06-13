@@ -43,6 +43,7 @@ interface ElectronAPI {
   // Git
   gitDiff: (cwd?: string) => Promise<{ success: boolean; diff: string; error?: string }>
   gitDiffStat: (cwd?: string) => Promise<{ success: boolean; stat: string; error?: string }>
+  gitFileDiff: (file: string, cwd?: string) => Promise<{ success: boolean; diff: string; error?: string }>
   gitAccept: (file: string, cwd?: string) => Promise<{ success: boolean; error?: string }>
   gitReject: (file: string, cwd?: string) => Promise<{ success: boolean; error?: string }>
 
