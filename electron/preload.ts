@@ -106,5 +106,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     }
     ipcRenderer.on('mimo-serve-output', listener)
     return () => ipcRenderer.removeListener('mimo-serve-output', listener)
-  }
+  },
+
+  // Inspector / data adapters
+  fetchSessions: () => safeInvoke('fetch-sessions'),
+  exportSessionData: (sessionId: string) => safeInvoke('export-session-data', sessionId),
+  readProjectContext: (projectDir: string) => safeInvoke('read-project-context', projectDir)
 })

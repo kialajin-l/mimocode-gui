@@ -4,6 +4,8 @@ import fs from 'fs'
 import { spawn, execFileSync, ChildProcess } from 'child_process'
 import { sendMessage, cancelMessage, getMimoPath, stopAllProcesses } from './cli-bridge'
 import { startMimoServe, stopMimoServe, getMimoServeStatus, onMimoServeOutput } from './mimo-process'
+import { fetchSessionList, exportSession } from './cli-data-adapter'
+import { readMemoryFiles, readCheckpoints } from './local-data-adapter'
 
 const DATA_DIR = app.getPath('userData')
 const DATA_FILE = path.join(DATA_DIR, 'sessions.json')
@@ -367,6 +369,33 @@ ipcMain.handle('open-file', async (_, filters?: { name: string; extensions: stri
     return { success: true, content, filePath: result.filePaths[0] }
   } catch (err) {
     return { success: false, error: String(err) }
+  }
+})
+
+ipcMain.handle('fetch-sessions', async () => {
+  try {
+    return { success: true, sessions: await fetchSessionList() }
+  } catch (err) {
+    return { success: false, sessions: [], error: String(err) }
+  }
+})
+
+ipcMain.handle('export-session-data', async (_, sessionId: string) => {
+  try {
+    const data = await exportSession(sessionId)
+    return { success: true, data }
+  } catch (err) {
+    return { success: false, data: null, error: String(err) }
+  }
+})
+
+ipcMain.handle('read-project-context', async (_, projectDir: string) => {
+  try {
+    const memory = readMemoryFiles(projectDir)
+    const checkpoints = readCheckpoints(projectDir)
+    return { success: true, memory, checkpoints }
+  } catch (err) {
+    return { success: false, memory: [], checkpoints: [], error: String(err) }
   }
 })
 

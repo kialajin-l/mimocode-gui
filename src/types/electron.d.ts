@@ -64,6 +64,16 @@ interface ElectronAPI {
   stopMimoServe: () => Promise<boolean>
   getMimoServeStatus: () => Promise<{ status: 'running' | 'stopped' | 'error'; url: string | null }>
   onMimoServeOutput: (callback: (data: { type: string; content: string }) => void) => (() => void)
+
+  // Inspector / data adapters
+  fetchSessions: () => Promise<{ success: boolean; sessions: any[]; error?: string }>
+  exportSessionData: (sessionId: string) => Promise<{ success: boolean; data: any; error?: string }>
+  readProjectContext: (projectDir: string) => Promise<{
+    success: boolean
+    memory: { name: string; path: string; content: string; mtime: number }[]
+    checkpoints: { name: string; path: string; content: string; mtime: number }[]
+    error?: string
+  }>
 }
 
 declare global {
