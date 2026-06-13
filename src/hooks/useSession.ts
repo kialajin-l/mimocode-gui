@@ -72,8 +72,12 @@ export function useSession() {
     }
 
     try {
+      const storeState = useSessionStore.getState()
+      const session = storeState.sessions.find(s => s.id === sessionId)
+      const cwd = session?.cwd || '.'
+
       api.onMessageChunk(sessionId, handleChunk)
-      const result = await api.sendMessage(sessionId, content, undefined, model, permission)
+      const result = await api.sendMessage(sessionId, content, cwd, model, permission)
       api.removeMessageChunkListener(sessionId)
 
       if (result?.success && result.content) {

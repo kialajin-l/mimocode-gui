@@ -132,16 +132,39 @@ app.on('before-quit', () => {
 // Terminal execution
 const terminalProcesses = new Map<string, ChildProcess>()
 
+// Dangerous commands that require confirmation
+const DANGEROUS_COMMANDS = ['rm -rf', 'rmdir /s', 'del /f', 'format', 'mkfs', '> /dev/sda']
+
 ipcMain.handle('terminal-execute', (_, id: string, command: string, cwd?: string) => {
   try {
+    // Validate cwd - must be a relative path or within allowed directories
+    const resolvedCwd = cwd || process.cwd()
+    if (cwd && path.isAbsolute(cwd) && !cwd.startsWith(process.cwd())) {
+      return { success: false, error: 'Access denied: cwd outside project directory' }
+    }
+
+    // Check for dangerous commands
+    const lowerCmd = command.toLowerCase()
+    if (DANGEROUS_COMMANDS.some(d => lowerCmd.includes(d))) {
+      return { success: false, error: 'Blocked: potentially dangerous command' }
+    }
+
     const isWin = process.platform === 'win32'
     const child = spawn(isWin ? 'cmd.exe' : 'bash', isWin ? ['/c', command] : ['-c', command], {
-      cwd: cwd || process.cwd(),
+      cwd: resolvedCwd,
       env: { ...process.env },
       stdio: ['pipe', 'pipe', 'pipe']
     })
 
     terminalProcesses.set(id, child)
+
+    // Auto-kill after 60 seconds
+    const timeout = setTimeout(() => {
+      if (!child.killed) {
+        child.kill()
+        mainWindow?.webContents.send('terminal-output', id, '\n[Timeout: process killed after 60s]\n')
+      }
+    }, 60000)
 
     child.stdout?.on('data', (data: Buffer) => {
       mainWindow?.webContents.send('terminal-output', id, data.toString())
@@ -152,6 +175,7 @@ ipcMain.handle('terminal-execute', (_, id: string, command: string, cwd?: string
     })
 
     child.on('close', (code) => {
+      clearTimeout(timeout)
       terminalProcesses.delete(id)
       mainWindow?.webContents.send(`terminal-exit-${id}`, id, code)
     })
@@ -181,7 +205,6 @@ ipcMain.handle('terminal-kill', (_, id: string) => {
 // Git diff detection
 ipcMain.handle('git-diff', async (_, cwd?: string) => {
   try {
-    const { execFileSync } = require('child_process')
     const dir = cwd || process.cwd()
     const diff = execFileSync('git', ['diff'], { cwd: dir, encoding: 'utf-8', timeout: 5000 })
     return { success: true, diff }
@@ -200,8 +223,29 @@ ipcMain.handle('git-diff-stat', async (_, cwd?: string) => {
   }
 })
 
+// Path validation helper for git operations
+function validateGitPath(file: string, cwd?: string): { valid: boolean; error?: string } {
+  // Reject absolute paths
+  if (path.isAbsolute(file)) {
+    return { valid: false, error: 'Absolute paths not allowed' }
+  }
+  // Reject path traversal
+  if (file.includes('..')) {
+    return { valid: false, error: 'Path traversal not allowed' }
+  }
+  // Reject empty or very long paths
+  if (!file || file.length > 500) {
+    return { valid: false, error: 'Invalid file path' }
+  }
+  return { valid: true }
+}
+
 ipcMain.handle('git-accept', async (_, file: string, cwd?: string) => {
   try {
+    const validation = validateGitPath(file, cwd)
+    if (!validation.valid) {
+      return { success: false, error: validation.error }
+    }
     const dir = cwd || process.cwd()
     execFileSync('git', ['add', file], { cwd: dir, timeout: 5000 })
     return { success: true }
@@ -212,6 +256,10 @@ ipcMain.handle('git-accept', async (_, file: string, cwd?: string) => {
 
 ipcMain.handle('git-reject', async (_, file: string, cwd?: string) => {
   try {
+    const validation = validateGitPath(file, cwd)
+    if (!validation.valid) {
+      return { success: false, error: validation.error }
+    }
     const dir = cwd || process.cwd()
     execFileSync('git', ['checkout', 'HEAD', '--', file], { cwd: dir, timeout: 5000 })
     return { success: true }
@@ -243,7 +291,23 @@ ipcMain.handle('save-file', async (_, content: string, defaultName: string) => {
 // File operations
 ipcMain.handle('read-file', async (_, filePath: string) => {
   try {
-    const content = fs.readFileSync(filePath, 'utf-8')
+    // Path validation - only allow reading from user data directory or current project
+    const resolved = path.resolve(filePath)
+    const userDataDir = app.getPath('userData')
+    const projectDir = process.cwd()
+    
+    if (!resolved.startsWith(userDataDir) && !resolved.startsWith(projectDir)) {
+      return { success: false, error: 'Access denied: path outside allowed directories' }
+    }
+
+    // Reject sensitive files
+    const basename = path.basename(resolved).toLowerCase()
+    const sensitivePatterns = ['.env', 'credentials', 'secret', 'password', 'token', '.key', '.pem']
+    if (sensitivePatterns.some(p => basename.includes(p))) {
+      return { success: false, error: 'Access denied: sensitive file' }
+    }
+
+    const content = fs.readFileSync(resolved, 'utf-8')
     return { success: true, content }
   } catch (err) {
     return { success: false, error: String(err) }

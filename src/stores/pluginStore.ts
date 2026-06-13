@@ -21,10 +21,17 @@ let pluginSaveTimer: ReturnType<typeof setTimeout> | null = null
 
 function schedulePluginSave(plugins: Plugin[]) {
   if (pluginSaveTimer) clearTimeout(pluginSaveTimer)
-  pluginSaveTimer = setTimeout(() => {
+  pluginSaveTimer = setTimeout(async () => {
     const api = window.electronAPI
     if (api) {
-      api.saveData({ plugins })
+      // Read existing data first to merge
+      try {
+        const existing = await api.loadData()
+        const merged = { ...existing, plugins }
+        await api.saveData(merged)
+      } catch (err) {
+        console.error('[PluginStore] save error:', err)
+      }
     }
   }, 500)
 }

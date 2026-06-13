@@ -17,7 +17,7 @@
   --bg-root:        oklch(0.12 0.006 260);
   --bg-surface:     oklch(0.15 0.006 260);
   --bg-elevated:    oklch(0.18 0.008 260);
-  --bg-overlay:     oklch(0.15 0.006 260 / 0.80);
+  --bg-overlay:     oklch(0.15 0.006 260 / 0.85);
   --bg-input:       oklch(0.14 0.006 260);
   --bg-code:        oklch(0.11 0.005 260);
   --bg-hover:       oklch(0.22 0.010 260);
@@ -78,26 +78,59 @@ html, body {
    ============================================================ */
 #app { display: flex; height: 100vh; overflow: hidden; flex-direction: column; }
 
-/* --- Title bar (macOS style) --- */
+/* --- Title bar --- */
 .title-bar {
   display: flex; align-items: center; justify-content: space-between;
-  height: 38px; padding: 0 12px;
+  height: 36px; padding: 0 12px;
   background: var(--bg-surface);
   border-bottom: 1px solid var(--border-subtle);
-  -webkit-app-region: drag;
-  user-select: none; flex-shrink: 0;
+  user-select: none; flex-shrink: 0; position: relative; z-index: 20;
 }
 .title-bar-left {
-  display: flex; align-items: center; gap: 20px;
+  display: flex; align-items: center; gap: 0;
   font-size: 12.5px; font-weight: 500; color: var(--text-secondary);
 }
-.title-bar-left span { cursor: default; }
-.title-bar-right {
-  font-size: 11.5px; color: var(--text-tertiary);
-  -webkit-app-region: no-drag;
+.menu-item-top {
+  padding: 5px 12px; border-radius: var(--radius-sm); cursor: pointer;
+  color: var(--text-secondary); transition: all var(--duration-fast);
+  position: relative; border: none; background: transparent; font-family: inherit; font-size: 12.5px;
 }
+.menu-item-top:hover, .menu-item-top.active { background: var(--bg-hover); color: var(--text-primary); }
+
+.title-bar-right {
+  font-size: 11.5px; color: var(--text-tertiary); display: flex; align-items: center; gap: 8px;
+}
+.win-ctrls { display: flex; gap: 2px; }
+.win-ctrl {
+  width: 28px; height: 20px; display: flex; align-items: center; justify-content: center;
+  border-radius: 4px; color: var(--text-tertiary); cursor: pointer; transition: all var(--duration-fast);
+  border: none; background: transparent; font-size: 14px;
+}
+.win-ctrl:hover { background: var(--bg-hover); color: var(--text-secondary); }
+.win-ctrl.close:hover { background: var(--red); color: #fff; }
 
 .app-body { display: flex; flex: 1; overflow: hidden; }
+
+/* --- Dropdown menu --- */
+.dropdown-menu {
+  position: absolute; top: 100%; left: 0;
+  min-width: 200px; background: var(--bg-elevated);
+  border: 1px solid var(--border-default); border-radius: var(--radius-md);
+  padding: 6px; backdrop-filter: blur(20px); z-index: 100;
+  animation: dropIn var(--duration-fast) var(--ease-out-quart);
+  display: none; box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+@keyframes dropIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+.dropdown-menu.show { display: block; }
+.dropdown-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 12px; border-radius: var(--radius-sm);
+  color: var(--text-secondary); cursor: pointer; font-size: 13px;
+  transition: all var(--duration-fast); gap: 16px;
+}
+.dropdown-item:hover { background: var(--bg-hover); color: var(--text-primary); }
+.dropdown-item .shortcut { font-size: 11.5px; color: var(--text-tertiary); }
+.dropdown-sep { height: 1px; margin: 4px 8px; background: var(--border-subtle); }
 
 /* ============================================================
    LEFT SIDEBAR
@@ -111,8 +144,7 @@ html, body {
 }
 
 .sidebar-scroll {
-  flex: 1; overflow-y: auto; overflow-x: hidden;
-  padding-bottom: 8px;
+  flex: 1; overflow-y: auto; overflow-x: hidden; padding-bottom: 8px;
 }
 
 /* --- Section label --- */
@@ -129,17 +161,13 @@ html, body {
   padding: 8px 12px 4px;
 }
 .nav-btn {
-  width: 30px; height: 30px;
-  display: flex; align-items: center; justify-content: center;
-  border-radius: var(--radius-sm);
-  color: var(--text-secondary); cursor: pointer;
-  transition: background var(--duration-fast), color var(--duration-fast);
-  border: none; background: transparent; font-size: 15px;
+  width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-sm); color: var(--text-secondary); cursor: pointer;
+  transition: background var(--duration-fast); border: none; background: transparent;
 }
 .nav-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
-.nav-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: var(--radius-sm); }
 
-/* --- Quick-access items (search, plugins, automations) --- */
+/* Quick-access items */
 .quick-item {
   display: flex; align-items: center; gap: 10px;
   padding: 7px 14px; margin: 1px 8px;
@@ -151,64 +179,42 @@ html, body {
   text-align: left; width: calc(100% - 16px);
 }
 .quick-item:hover { background: var(--bg-hover); color: var(--text-primary); }
-.quick-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-
-.quick-icon {
-  width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-}
+.quick-item.active { background: var(--accent-subtle); color: var(--accent); }
+.quick-icon { width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .quick-icon svg { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 1.8; }
 
-/* --- Project tree --- */
+/* Project tree */
 .project-tree { padding: 0 0 4px; }
 
-/* Project node (top-level) */
-.project-node {
-  margin: 1px 8px; border-radius: var(--radius-md);
-  overflow: hidden;
-}
+.project-node { margin: 1px 8px; border-radius: var(--radius-md); overflow: hidden; }
 
 .project-header {
-  display: flex; align-items: center; gap: 7px;
-  padding: 6px 10px;
-  border-radius: var(--radius-md);
-  cursor: pointer;
+  display: flex; align-items: center; gap: 7px; padding: 6px 10px;
+  border-radius: var(--radius-md); cursor: pointer;
   transition: all var(--duration-fast);
   color: var(--text-secondary); font-size: 13px; font-weight: 500;
 }
 .project-header:hover { background: var(--bg-hover); color: var(--text-primary); }
-.project-header:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 
 .project-chevron {
   width: 16px; height: 16px; display: flex; align-items: center; justify-content: center;
-  transition: transform var(--duration-fast) var(--ease-out-quart);
-  flex-shrink: 0; color: var(--text-tertiary);
+  transition: transform var(--duration-fast) var(--ease-out-quart); flex-shrink: 0; color: var(--text-tertiary);
 }
 .project-chevron svg { width: 12px; height: 12px; }
 .project-node.expanded .project-chevron { transform: rotate(90deg); }
 
-.project-icon-dot {
-  width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
-}
+.project-icon-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.project-name-text { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-.project-name-text {
-  flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-
-/* Session list (nested under project) */
-.session-list {
-  display: none; padding-left: 12px;
-}
+.session-list { display: none; padding-left: 12px; }
 .project-node.expanded .session-list { display: block; }
 
 .session-item {
   display: flex; align-items: center; gap: 8px;
-  padding: 5px 10px 5px 24px;
-  margin: 1px 0;
-  border-radius: var(--radius-md);
-  cursor: pointer;
+  padding: 5px 10px 5px 24px; margin: 1px 0;
+  border-radius: var(--radius-md); cursor: pointer; position: relative;
   transition: all var(--duration-fast);
   color: var(--text-secondary); font-size: 12.5px;
-  position: relative;
 }
 .session-item:hover { background: var(--bg-hover); color: var(--text-primary); }
 .session-item.active {
@@ -218,43 +224,32 @@ html, body {
   content: ''; position: absolute; left: 8px; top: 50%; transform: translateY(-50%);
   width: 3px; height: 18px; background: var(--accent); border-radius: 0 2px 2px 0;
 }
+.session-title { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.session-time { font-size: 11px; color: var(--text-tertiary); flex-shrink: 0; }
 
-.session-title {
-  flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.session-time {
-  font-size: 11px; color: var(--text-tertiary); flex-shrink: 0;
-}
-
-/* New project button */
 .new-project-btn {
   display: flex; align-items: center; gap: 8px;
   padding: 7px 12px; margin: 6px 8px;
-  border-radius: var(--radius-md);
-  color: var(--text-tertiary); cursor: pointer;
-  font-size: 12.5px; font-weight: 500;
-  transition: all var(--duration-fast);
-  border: 1px dashed var(--border-default);
-  background: transparent; font-family: inherit;
+  border-radius: var(--radius-md); color: var(--text-tertiary); cursor: pointer;
+  font-size: 12.5px; font-weight: 500; transition: all var(--duration-fast);
+  border: 1px dashed var(--border-default); background: transparent; font-family: inherit;
   width: calc(100% - 16px); text-align: left;
 }
 .new-project-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-subtle); }
 
 /* Bottom settings */
 .sidebar-bottom {
-  padding: 6px 8px; border-top: 1px solid var(--border-subtle);
-  flex-shrink: 0;
+  padding: 6px 8px; border-top: 1px solid var(--border-subtle); flex-shrink: 0;
 }
 .settings-item {
   display: flex; align-items: center; gap: 10px;
   padding: 7px 12px; border-radius: var(--radius-md);
   color: var(--text-tertiary); cursor: pointer;
-  transition: all var(--duration-fast);
-  border: none; background: transparent;
-  font-family: inherit; font-size: 13px;
-  width: 100%; text-align: left;
+  transition: all var(--duration-fast); border: none; background: transparent;
+  font-family: inherit; font-size: 13px; width: 100%; text-align: left;
 }
 .settings-item:hover { background: var(--bg-hover); color: var(--text-secondary); }
+.settings-item.active { background: var(--accent-subtle); color: var(--accent); }
 
 /* ============================================================
    MAIN CONTENT AREA
@@ -274,9 +269,7 @@ html, body {
   z-index: 5; flex-shrink: 0;
 }
 .top-bar-left { display: flex; align-items: center; gap: 10px; }
-.session-breadcrumb {
-  font-size: 13.5px; font-weight: 600; color: var(--text-primary);
-}
+.session-breadcrumb { font-size: 13.5px; font-weight: 600; color: var(--text-primary); }
 .top-bar-right { display: flex; align-items: center; gap: 6px; }
 .top-btn {
   width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
@@ -285,57 +278,49 @@ html, body {
 }
 .top-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
 .top-btn.active { color: var(--accent); background: var(--accent-subtle); }
-.top-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-/* Chat area */
+/* ============================================================
+   VIEW CONTAINERS
+   ============================================================ */
+.view-container { display: none; flex: 1; flex-direction: column; overflow: hidden; }
+.view-container.active { display: flex; }
+
+/* --- Chat view --- */
 #chat-area {
   flex: 1; overflow-y: auto; padding: 0 0 170px; scroll-behavior: smooth;
 }
-
-/* Welcome */
 .welcome {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   height: 100%; padding: 40px; text-align: center;
 }
 .welcome-illustration {
   width: 72px; height: 72px; border-radius: var(--radius-xl);
-  background: radial-gradient(circle at 40% 40%, var(--accent-glow), transparent 70%),
-              oklch(0.58 0.22 290 / 0.06);
-  display: flex; align-items: center; justify-content: center;
-  margin-bottom: 20px;
+  background: radial-gradient(circle at 40% 40%, var(--accent-glow), transparent 70%), oklch(0.58 0.22 290 / 0.06);
+  display: flex; align-items: center; justify-content: center; margin-bottom: 20px;
   animation: float 5s ease-in-out infinite;
 }
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
-}
+@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
 .welcome-illustration svg { width: 36px; height: 36px; stroke: var(--accent); fill: none; stroke-width: 1.6; }
 .welcome h2 { font-size: 22px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.02em; }
 .welcome p { font-size: 14px; color: var(--text-tertiary); max-width: 400px; line-height: 1.6; }
 
-/* Messages */
 .message {
   max-width: 820px; margin: 0 auto; padding: 18px 40px;
   animation: msgIn var(--duration-slow) var(--ease-out-expo);
 }
 @keyframes msgIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
 .message-row { display: flex; gap: 12px; align-items: flex-start; }
-
 .message-avatar {
   width: 28px; height: 28px; border-radius: var(--radius-sm); flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-  font-weight: 700; font-size: 11px;
+  display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 11px;
 }
 .avatar-user { background: var(--accent); color: #fff; }
 .avatar-ai   { background: var(--bg-elevated); color: var(--accent); }
-
 .message-content { flex: 1; min-width: 0; font-size: 14px; line-height: 1.7; color: var(--text-primary); }
 .message-content p { margin-bottom: 8px; }
 .message-content p:last-child { margin-bottom: 0; }
 .message-content strong { color: var(--text-primary); }
 
-/* Code block */
 .code-block {
   background: var(--bg-code); border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg); margin: 12px 0; overflow: hidden;
@@ -343,8 +328,7 @@ html, body {
 .code-header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 7px 14px; background: var(--bg-elevated);
-  border-bottom: 1px solid var(--border-subtle);
-  font-size: 11.5px; color: var(--text-tertiary);
+  border-bottom: 1px solid var(--border-subtle); font-size: 11.5px; color: var(--text-tertiary);
 }
 .code-lang { display: flex; align-items: center; gap: 6px; }
 .copy-btn {
@@ -358,7 +342,6 @@ html, body {
   font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 12.5px; line-height: 1.6;
 }
 
-/* File card */
 .file-card {
   background: var(--bg-surface); border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg); margin: 12px 0; overflow: hidden;
@@ -366,8 +349,7 @@ html, body {
 .file-card-header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 9px 14px; background: var(--bg-elevated);
-  border-bottom: 1px solid var(--border-subtle);
-  font-size: 12.5px; font-weight: 500;
+  border-bottom: 1px solid var(--border-subtle); font-size: 12.5px; font-weight: 500;
 }
 .file-card-left { display: flex; align-items: center; gap: 8px; }
 .file-status {
@@ -375,28 +357,238 @@ html, body {
 }
 .file-status.modified { background: var(--yellow-subtle); color: var(--yellow); }
 .file-status.created  { background: var(--green-subtle);  color: var(--green);  }
-.file-stat {
-  font-size: 11px; color: var(--text-tertiary); display: flex; gap: 6px;
-}
+.file-stat { font-size: 11px; color: var(--text-tertiary); display: flex; gap: 6px; }
 .file-stat .added { color: var(--green); }
 .file-stat .removed { color: var(--red); }
-.file-diff {
-  font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.7;
-}
+.file-diff { font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.7; }
 .diff-line { padding: 1px 14px; white-space: pre; }
 .diff-line.added   { background: var(--green-subtle);  color: var(--green);  }
 .diff-line.removed { background: var(--red-subtle);    color: var(--red);    }
 .diff-line.context { color: var(--text-tertiary); }
 .diff-line.header  { color: oklch(0.65 0.15 280); font-weight: 500; }
 
-/* Inline file references */
-.inline-file-ref {
-  display: inline-flex; align-items: center; gap: 5px;
-  padding: 2px 8px; border-radius: var(--radius-sm);
-  background: var(--accent-subtle); color: var(--accent);
-  font-family: 'JetBrains Mono', monospace; font-size: 12px;
-  margin: 0 2px;
+/* ============================================================
+   SEARCH VIEW
+   ============================================================ */
+.search-view-inner { padding: 32px 40px; max-width: 720px; }
+.search-input-wrap {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--bg-elevated); border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg); padding: 10px 16px;
+  transition: border-color var(--duration-fast), box-shadow var(--duration-fast);
 }
+.search-input-wrap:focus-within {
+  border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow);
+}
+.search-input-wrap svg { width: 18px; height: 18px; stroke: var(--text-tertiary); flex-shrink: 0; }
+.search-input-field {
+  flex: 1; border: none; outline: none; background: transparent;
+  color: var(--text-primary); font-family: inherit; font-size: 14px;
+}
+.search-input-field::placeholder { color: var(--text-disabled); }
+.search-filters {
+  display: flex; gap: 6px; margin-top: 16px; margin-bottom: 10px;
+}
+.search-filter-tag {
+  padding: 4px 12px; border-radius: var(--radius-full);
+  font-size: 12px; color: var(--text-tertiary); cursor: pointer;
+  border: 1px solid var(--border-subtle); background: transparent;
+  font-family: inherit; transition: all var(--duration-fast);
+}
+.search-filter-tag:hover { border-color: var(--border-default); color: var(--text-secondary); }
+.search-filter-tag.active { background: var(--accent-subtle); border-color: var(--accent); color: var(--accent); }
+.search-results { margin-top: 8px; }
+.search-result-item {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 12px 14px; border-radius: var(--radius-md);
+  cursor: pointer; transition: all var(--duration-fast);
+}
+.search-result-item:hover { background: var(--bg-hover); }
+.search-result-icon {
+  width: 32px; height: 32px; border-radius: var(--radius-sm);
+  background: var(--bg-elevated); display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; color: var(--text-tertiary);
+}
+.search-result-main { flex: 1; min-width: 0; }
+.search-result-title { font-size: 13.5px; font-weight: 500; color: var(--text-primary); margin-bottom: 2px; }
+.search-result-title mark { background: var(--accent-glow); color: var(--accent); padding: 0 2px; border-radius: 2px; }
+.search-result-path { font-size: 11.5px; color: var(--text-tertiary); margin-bottom: 2px; }
+.search-result-snippet { font-size: 12px; color: var(--text-secondary); line-height: 1.4; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.search-result-badge { font-size: 10.5px; padding: 2px 8px; border-radius: var(--radius-full); color: var(--text-tertiary); border: 1px solid var(--border-subtle); flex-shrink: 0; }
+
+/* ============================================================
+   PLUGINS VIEW
+   ============================================================ */
+.plugins-view-inner { padding: 28px 40px; overflow-y: auto; flex: 1; }
+.plugins-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.plugins-title { font-size: 18px; font-weight: 700; }
+.plugins-tabs { display: flex; gap: 4px; }
+.plugins-tab {
+  padding: 6px 16px; border-radius: var(--radius-md); font-size: 13px; font-weight: 500;
+  color: var(--text-tertiary); cursor: pointer; border: none; background: transparent;
+  font-family: inherit; transition: all var(--duration-fast);
+}
+.plugins-tab:hover { color: var(--text-secondary); background: var(--bg-hover); }
+.plugins-tab.active { color: var(--accent); background: var(--accent-subtle); }
+.plugin-search {
+  width: 100%; padding: 9px 14px; border-radius: var(--radius-md);
+  border: 1px solid var(--border-default); background: var(--bg-input);
+  color: var(--text-primary); font-family: inherit; font-size: 13px; outline: none;
+  transition: border-color var(--duration-fast);
+}
+.plugin-search:focus { border-color: var(--accent); }
+.plugin-search::placeholder { color: var(--text-disabled); }
+.plugin-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; margin-top: 16px;
+}
+.plugin-card {
+  background: var(--bg-surface); border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg); padding: 16px;
+  transition: all var(--duration-fast); cursor: pointer;
+}
+.plugin-card:hover { border-color: var(--accent); background: oklch(0.15 0.006 260 / 1); }
+.plugin-card-top { display: flex; gap: 12px; margin-bottom: 10px; }
+.plugin-card-icon {
+  width: 44px; height: 44px; border-radius: var(--radius-md);
+  background: var(--accent-subtle); display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; color: var(--accent);
+}
+.plugin-card-icon svg { width: 22px; height: 22px; }
+.plugin-card-info { flex: 1; }
+.plugin-card-name { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+.plugin-card-author { font-size: 11.5px; color: var(--text-tertiary); }
+.plugin-card-desc { font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 12px; }
+.plugin-card-meta { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-tertiary); }
+.plugin-card-action {
+  margin-top: 10px; padding: 5px 14px; border-radius: var(--radius-sm);
+  font-size: 12px; font-weight: 500; font-family: inherit; cursor: pointer;
+  border: 1px solid var(--accent); color: var(--accent); background: transparent;
+  transition: all var(--duration-fast);
+}
+.plugin-card-action:hover { background: var(--accent-subtle); }
+.plugin-card-action.installed { border-color: var(--border-default); color: var(--text-secondary); }
+
+/* ============================================================
+   AUTOMATION VIEW
+   ============================================================ */
+.automation-view-inner { padding: 28px 40px; overflow-y: auto; flex: 1; }
+.automation-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.automation-title { font-size: 18px; font-weight: 700; }
+.automation-create-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 16px; border-radius: var(--radius-md);
+  background: var(--accent); color: #fff; border: none;
+  font-family: inherit; font-size: 13px; font-weight: 500; cursor: pointer;
+  transition: all var(--duration-fast);
+}
+.automation-create-btn:hover { background: oklch(0.63 0.24 290); }
+.automation-list { display: flex; flex-direction: column; gap: 8px; }
+.automation-item {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 16px; border-radius: var(--radius-lg);
+  background: var(--bg-surface); border: 1px solid var(--border-subtle);
+  transition: all var(--duration-fast); cursor: pointer;
+}
+.automation-item:hover { border-color: var(--accent); background: oklch(0.15 0.006 260 / 1); }
+.automation-item-icon {
+  width: 40px; height: 40px; border-radius: var(--radius-md);
+  background: var(--accent-subtle); display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; color: var(--accent);
+}
+.automation-item-info { flex: 1; }
+.automation-item-name { font-size: 14px; font-weight: 500; margin-bottom: 2px; }
+.automation-item-desc { font-size: 12px; color: var(--text-tertiary); }
+.automation-item-status {
+  display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+}
+.status-dot { width: 8px; height: 8px; border-radius: 50%; }
+.status-dot.running { background: var(--green); }
+.status-dot.paused  { background: var(--yellow); }
+.status-dot.idle    { background: var(--text-tertiary); }
+.automation-item-actions { display: flex; gap: 4px; }
+.automation-item-btn {
+  width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-sm); color: var(--text-tertiary); cursor: pointer;
+  border: none; background: transparent; transition: all var(--duration-fast);
+}
+.automation-item-btn:hover { background: var(--bg-hover); color: var(--text-secondary); }
+.automation-stats {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 24px;
+}
+.automation-stat-card {
+  background: var(--bg-surface); border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg); padding: 16px; text-align: center;
+}
+.automation-stat-value { font-size: 28px; font-weight: 700; color: var(--accent); }
+.automation-stat-label { font-size: 12px; color: var(--text-tertiary); margin-top: 4px; }
+
+/* ============================================================
+   SETTINGS VIEW
+   ============================================================ */
+.settings-view-inner { display: flex; height: 100%; overflow: hidden; }
+.settings-nav {
+  width: 200px; padding: 20px 0; border-right: 1px solid var(--border-subtle);
+  flex-shrink: 0; overflow-y: auto;
+}
+.settings-nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 20px; margin: 1px 8px; border-radius: var(--radius-md);
+  color: var(--text-secondary); cursor: pointer; font-size: 13px; font-weight: 500;
+  transition: all var(--duration-fast); border: none; background: transparent;
+  font-family: inherit; width: calc(100% - 16px); text-align: left;
+}
+.settings-nav-item:hover { background: var(--bg-hover); color: var(--text-primary); }
+.settings-nav-item.active { background: var(--accent-subtle); color: var(--accent); }
+.settings-nav-item::before {
+  content: ''; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.settings-content {
+  flex: 1; padding: 20px 32px; overflow-y: auto;
+}
+.settings-section-title { font-size: 16px; font-weight: 700; margin-bottom: 20px; }
+.settings-group {
+  margin-bottom: 28px;
+}
+.settings-group-label {
+  font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.05em; color: var(--text-tertiary); margin-bottom: 10px;
+}
+.settings-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 0; border-bottom: 1px solid var(--border-subtle);
+}
+.settings-row-label { font-size: 13.5px; }
+.settings-row-desc  { font-size: 12px; color: var(--text-tertiary); margin-top: 2px; }
+.settings-select {
+  padding: 5px 12px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border-default); background: var(--bg-input);
+  color: var(--text-primary); font-family: inherit; font-size: 13px;
+  appearance: none; padding-right: 24px; cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23888' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 6px center;
+}
+.settings-toggle {
+  width: 40px; height: 22px; border-radius: 11px;
+  background: var(--border-default); cursor: pointer;
+  position: relative; transition: background var(--duration-fast); border: none;
+}
+.settings-toggle.on { background: var(--accent); }
+.settings-toggle::after {
+  content: ''; position: absolute; top: 2px; left: 2px;
+  width: 18px; height: 18px; border-radius: 50%; background: #fff;
+  transition: transform var(--duration-fast) var(--ease-out-quart);
+}
+.settings-toggle.on::after { transform: translateX(18px); }
+.settings-about {
+  display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 20px 0;
+}
+.settings-about-logo {
+  width: 64px; height: 64px; border-radius: var(--radius-xl);
+  background: radial-gradient(circle at 40% 40%, var(--accent-glow), transparent 70%), var(--accent-subtle);
+  display: flex; align-items: center; justify-content: center;
+}
+.settings-about-name { font-size: 18px; font-weight: 700; }
+.settings-about-version { font-size: 13px; color: var(--text-tertiary); }
 
 /* ============================================================
    RIGHT PANEL
@@ -418,8 +610,7 @@ html, body {
   padding: 9px 14px; font-size: 12.5px; font-weight: 500;
   color: var(--text-tertiary); cursor: pointer;
   border: none; background: transparent; font-family: inherit;
-  border-bottom: 2px solid transparent; transition: all var(--duration-fast);
-  margin-bottom: -1px;
+  border-bottom: 2px solid transparent; transition: all var(--duration-fast); margin-bottom: -1px;
 }
 .panel-tab:hover { color: var(--text-secondary); }
 .panel-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
@@ -428,15 +619,13 @@ html, body {
 
 .review-empty {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  height: 100%; padding: 40px; text-align: center;
-  color: var(--text-tertiary); font-size: 13px; gap: 8px;
+  height: 100%; padding: 40px; text-align: center; color: var(--text-tertiary); font-size: 13px; gap: 8px;
 }
 
 .review-file { border-bottom: 1px solid var(--border-subtle); }
 .review-file:hover { background: var(--bg-hover); }
 .review-file-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 10px 14px; font-size: 13px; font-weight: 500;
+  display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; font-size: 13px; font-weight: 500;
 }
 .review-file-name { display: flex; align-items: center; gap: 8px; }
 .review-actions { display: flex; gap: 4px; }
@@ -444,8 +633,8 @@ html, body {
   width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
   border-radius: var(--radius-sm); cursor: pointer; border: none; transition: all var(--duration-fast);
 }
-.review-accept { background: var(--green-subtle);  color: var(--green); }
-.review-reject { background: var(--red-subtle);    color: var(--red); }
+.review-accept { background: var(--green-subtle); color: var(--green); }
+.review-reject { background: var(--red-subtle);   color: var(--red); }
 .review-accept:hover { background: oklch(0.62 0.17 155 / 0.2); }
 .review-reject:hover { background: oklch(0.58 0.20 20 / 0.2); }
 
@@ -453,15 +642,12 @@ html, body {
 .terminal-container { height: 100%; display: flex; flex-direction: column; }
 .terminal-header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 7px 14px; background: var(--bg-elevated);
-  border-bottom: 1px solid var(--border-subtle);
-  font-size: 11.5px; color: var(--text-tertiary);
+  padding: 7px 14px; background: var(--bg-elevated); border-bottom: 1px solid var(--border-subtle); font-size: 11.5px; color: var(--text-tertiary);
 }
 .terminal-tabs { display: flex; gap: 2px; }
 .terminal-tab {
   padding: 3px 10px; border-radius: var(--radius-sm); font-size: 11.5px;
-  cursor: pointer; color: var(--text-tertiary);
-  border: none; background: transparent; font-family: inherit; transition: all var(--duration-fast);
+  cursor: pointer; color: var(--text-tertiary); border: none; background: transparent; font-family: inherit; transition: all var(--duration-fast);
 }
 .terminal-tab:hover { background: var(--bg-hover); color: var(--text-secondary); }
 .terminal-tab.active { background: var(--bg-active); color: var(--text-primary); }
@@ -475,14 +661,11 @@ html, body {
 .terminal-line .output { color: var(--text-secondary); }
 
 /* Resize handle */
-.resize-handle {
-  height: 4px; background: var(--border-subtle); cursor: col-resize;
-  transition: background var(--duration-fast); flex-shrink: 0;
-}
+.resize-handle { height: 4px; background: var(--border-subtle); cursor: col-resize; transition: background var(--duration-fast); flex-shrink: 0; }
 .resize-handle:hover { background: var(--accent); }
 
 /* ============================================================
-   BOTTOM INPUT BAR
+   BOTTOM INPUT BAR (chat view only)
    ============================================================ */
 #input-bar {
   position: absolute; bottom: 0; left: 0; right: 0;
@@ -490,16 +673,10 @@ html, body {
 }
 .input-wrapper {
   background: oklch(0.13 0.006 260 / 0.90);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-xl);
-  padding: 8px 12px;
-  transition: border-color var(--duration-fast), box-shadow var(--duration-fast);
-  backdrop-filter: blur(24px);
+  border: 1px solid var(--border-default); border-radius: var(--radius-xl);
+  padding: 8px 12px; transition: border-color var(--duration-fast), box-shadow var(--duration-fast); backdrop-filter: blur(24px);
 }
-.input-wrapper:focus-within {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-glow);
-}
+.input-wrapper:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
 #user-input {
   width: 100%; resize: none; border: none; outline: none;
   background: transparent; color: var(--text-primary);
@@ -507,45 +684,31 @@ html, body {
   padding: 4px 4px; min-height: 22px; max-height: 200px;
 }
 #user-input::placeholder { color: var(--text-tertiary); }
-
-.input-toolbar {
-  display: flex; align-items: center; justify-content: space-between;
-  padding-top: 6px;
-}
+.input-toolbar { display: flex; align-items: center; justify-content: space-between; padding-top: 6px; }
 .input-toolbar-left, .input-toolbar-right { display: flex; align-items: center; gap: 4px; }
-
 .attach-btn {
   width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
   border-radius: var(--radius-sm); color: var(--text-tertiary); cursor: pointer;
   transition: all var(--duration-fast); border: none; background: transparent;
 }
 .attach-btn:hover { background: var(--bg-hover); color: var(--text-secondary); }
-
 .permission-select, .model-select {
   padding: 4px 10px; border-radius: var(--radius-full);
-  font-size: 11.5px; font-weight: 500;
-  color: var(--text-secondary); cursor: pointer;
-  border: 1px solid var(--border-subtle);
-  background: var(--bg-elevated); font-family: inherit;
-  transition: all var(--duration-fast);
+  font-size: 11.5px; font-weight: 500; color: var(--text-secondary); cursor: pointer;
+  border: 1px solid var(--border-subtle); background: var(--bg-elevated); font-family: inherit; transition: all var(--duration-fast);
 }
 .permission-select:hover, .model-select:hover { border-color: var(--border-default); }
-.permission-select:focus-visible, .model-select:focus-visible {
-  outline: 2px solid var(--accent); outline-offset: 2px;
-}
 .model-select {
   appearance: none; padding-right: 22px;
   background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23888' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat; background-position: right 7px center;
 }
-
 .mic-btn {
   width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
   border-radius: var(--radius-full); color: var(--text-tertiary); cursor: pointer;
   transition: all var(--duration-fast); border: none; background: transparent;
 }
 .mic-btn:hover { background: var(--bg-hover); color: var(--text-secondary); }
-
 .send-btn {
   width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
   border-radius: var(--radius-full); color: #fff; cursor: pointer;
@@ -554,92 +717,137 @@ html, body {
 .send-btn:hover { background: oklch(0.63 0.24 290); transform: scale(1.06); }
 .send-btn:active { transform: scale(0.94); transition: transform 80ms ease; }
 .send-btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
-.send-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .send-btn svg { width: 15px; height: 15px; }
 
 .mode-toggle {
   display: flex; align-items: center; justify-content: center; gap: 5px;
   padding: 4px 0 0; font-size: 12px; color: var(--text-tertiary); cursor: pointer;
-  border: none; background: transparent; font-family: inherit; width: 100%;
-  transition: color var(--duration-fast);
+  border: none; background: transparent; font-family: inherit; width: 100%; transition: color var(--duration-fast);
 }
 .mode-toggle:hover { color: var(--text-secondary); }
 
-/* ============================================================
-   MISC
-   ============================================================ */
 .hidden { display: none !important; }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    transition-duration: 0.01ms !important;
-  }
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
 </style>
 </head>
 <body>
 <div id="app">
 
-  <!-- Title bar -->
+  <!-- Title bar with dropdown menus -->
   <div class="title-bar">
-    <div class="title-bar-left">
-      <span>快速对话</span>
-      <span>文件</span>
-      <span>编辑</span>
-      <span>视图</span>
-      <span>帮助</span>
+    <div class="title-bar-left" id="menu-bar">
+      <button class="menu-item-top" data-menu="file">快速对话</button>
+      <button class="menu-item-top" data-menu="edit">文件</button>
+      <button class="menu-item-top" data-menu="view">编辑</button>
+      <button class="menu-item-top" data-menu="help">视图</button>
+      <span class="menu-item-top" style="cursor:default;color:var(--text-tertiary)">帮助</span>
+
+      <!-- File dropdown -->
+      <div class="dropdown-menu" id="dropdown-file">
+        <div class="dropdown-item"><span>新建会话</span><span class="shortcut">Ctrl+N</span></div>
+        <div class="dropdown-item"><span>新建项目</span><span class="shortcut">Ctrl+Shift+N</span></div>
+        <div class="dropdown-sep"></div>
+        <div class="dropdown-item"><span>打开项目</span><span class="shortcut">Ctrl+O</span></div>
+        <div class="dropdown-item"><span>最近打开</span><span class="shortcut">&#9656;</span></div>
+        <div class="dropdown-sep"></div>
+        <div class="dropdown-item"><span>保存会话</span><span class="shortcut">Ctrl+S</span></div>
+        <div class="dropdown-item"><span>导出为 Markdown</span></div>
+        <div class="dropdown-item"><span>导出为 JSON</span></div>
+        <div class="dropdown-sep"></div>
+        <div class="dropdown-item"><span>退出</span><span class="shortcut">Alt+F4</span></div>
+      </div>
+
+      <!-- Edit dropdown -->
+      <div class="dropdown-menu" id="dropdown-edit">
+        <div class="dropdown-item"><span>撤销</span><span class="shortcut">Ctrl+Z</span></div>
+        <div class="dropdown-item"><span>重做</span><span class="shortcut">Ctrl+Y</span></div>
+        <div class="dropdown-sep"></div>
+        <div class="dropdown-item"><span>剪切</span><span class="shortcut">Ctrl+X</span></div>
+        <div class="dropdown-item"><span>复制</span><span class="shortcut">Ctrl+C</span></div>
+        <div class="dropdown-item"><span>粘贴</span><span class="shortcut">Ctrl+V</span></div>
+        <div class="dropdown-sep"></div>
+        <div class="dropdown-item"><span>查找</span><span class="shortcut">Ctrl+F</span></div>
+        <div class="dropdown-item"><span>替换</span><span class="shortcut">Ctrl+H</span></div>
+        <div class="dropdown-item"><span>全选</span><span class="shortcut">Ctrl+A</span></div>
+      </div>
+
+      <!-- View dropdown -->
+      <div class="dropdown-menu" id="dropdown-view">
+        <div class="dropdown-item" data-action="toggle-sidebar"><span>切换侧边栏</span><span class="shortcut">Ctrl+B</span></div>
+        <div class="dropdown-item" data-action="toggle-panel"><span>切换右侧面板</span></div>
+        <div class="dropdown-sep"></div>
+        <div class="dropdown-item"><span>放大</span><span class="shortcut">Ctrl+=</span></div>
+        <div class="dropdown-item"><span>缩小</span><span class="shortcut">Ctrl+-</span></div>
+        <div class="dropdown-item"><span>重置缩放</span><span class="shortcut">Ctrl+0</span></div>
+        <div class="dropdown-sep"></div>
+        <div class="dropdown-item"><span>全屏模式</span><span class="shortcut">F11</span></div>
+      </div>
+
+      <!-- Help dropdown -->
+      <div class="dropdown-menu" id="dropdown-help">
+        <div class="dropdown-item"><span>使用文档</span></div>
+        <div class="dropdown-item"><span>快捷键列表</span></div>
+        <div class="dropdown-sep"></div>
+        <div class="dropdown-item"><span>反馈问题</span></div>
+        <div class="dropdown-item"><span>检查更新</span></div>
+        <div class="dropdown-sep"></div>
+        <div class="dropdown-item"><span>关于 Mimo Code</span></div>
+      </div>
     </div>
-    <div class="title-bar-right">Mimo Code</div>
+    <div class="title-bar-right">
+      <span>Mimo Code v1.0</span>
+      <div class="win-ctrls">
+        <button class="win-ctrl" title="最小化">&#x2013;</button>
+        <button class="win-ctrl" title="最大化">&#9744;</button>
+        <button class="win-ctrl close" title="关闭">&#10005;</button>
+      </div>
+    </div>
   </div>
 
   <div class="app-body">
 
   <!-- ========== LEFT SIDEBAR ========== -->
   <aside id="sidebar">
-    <!-- Nav arrows -->
     <div class="sidebar-nav-row">
-      <button class="nav-btn" aria-label="返回" title="返回">
+      <button class="nav-btn" title="返回">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
       </button>
-      <button class="nav-btn" aria-label="前进" title="前进">
+      <button class="nav-btn" title="前进">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       </button>
     </div>
 
     <div class="sidebar-scroll">
-
-    <!-- 快速对话 section -->
     <div class="sidebar-section-label">快速对话</div>
 
-    <button class="quick-item" data-action="search">
+    <button class="quick-item active" data-view="chat">
       <span class="quick-icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
       搜索
     </button>
-    <button class="quick-item" data-action="plugins">
+    <button class="quick-item" data-view="plugins">
       <span class="quick-icon"><svg viewBox="0 0 24 24"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/><line x1="12" y1="22" x2="12" y2="15.5"/><polyline points="22 8.5 12 15.5 2 8.5"/></svg></span>
       插件
     </button>
-    <button class="quick-item" data-action="automation">
+    <button class="quick-item" data-view="automation">
       <span class="quick-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
       自动化
     </button>
 
-    <!-- 项目 section -->
     <div class="sidebar-section-label" style="display:flex;align-items:center;justify-content:space-between;padding-right:16px">
       项目
-      <button class="action-btn" title="新建项目" style="width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:4px;color:var(--text-tertiary);cursor:pointer;border:none;background:transparent">
+      <button title="新建项目" style="width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:4px;color:var(--text-tertiary);cursor:pointer;border:none;background:transparent">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       </button>
     </div>
 
     <div class="project-tree">
-
-      <!-- mimocode-gui -->
       <div class="project-node expanded" data-project="mimocode">
-        <div class="project-header" onclick="toggleProject(this)">
+        <div class="project-header" onclick="this.closest('.project-node').classList.toggle('expanded')">
           <span class="project-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></span>
-          <span class="project-icon-dot" style="background: var(--accent)"></span>
+          <span class="project-icon-dot" style="background:var(--accent)"></span>
           <span class="project-name-text">mimocode-gui</span>
         </div>
         <div class="session-list">
@@ -658,9 +866,8 @@ html, body {
         </div>
       </div>
 
-      <!-- codex-workflow -->
       <div class="project-node" data-project="codex-workflow">
-        <div class="project-header" onclick="toggleProject(this)">
+        <div class="project-header" onclick="this.closest('.project-node').classList.toggle('expanded')">
           <span class="project-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></span>
           <span class="project-icon-dot" style="background:oklch(0.62 0.18 200)"></span>
           <span class="project-name-text">codex-workflow</span>
@@ -677,9 +884,8 @@ html, body {
         </div>
       </div>
 
-      <!-- AI 终端 -->
       <div class="project-node" data-project="ai-terminal">
-        <div class="project-header" onclick="toggleProject(this)">
+        <div class="project-header" onclick="this.closest('.project-node').classList.toggle('expanded')">
           <span class="project-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></span>
           <span class="project-icon-dot" style="background:oklch(0.62 0.17 155)"></span>
           <span class="project-name-text">AI 终端</span>
@@ -692,9 +898,8 @@ html, body {
         </div>
       </div>
 
-      <!-- Nexus -->
       <div class="project-node" data-project="nexus">
-        <div class="project-header" onclick="toggleProject(this)">
+        <div class="project-header" onclick="this.closest('.project-node').classList.toggle('expanded')">
           <span class="project-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></span>
           <span class="project-icon-dot" style="background:oklch(0.62 0.18 40)"></span>
           <span class="project-name-text">Nexus</span>
@@ -704,16 +909,11 @@ html, body {
             <span class="session-title">Nexus skill 项目规划</span>
             <span class="session-time">2天前</span>
           </div>
-          <div class="session-item" data-session="nexus-replace">
-            <span class="session-title">替换 Nexus Skill 1.0</span>
-            <span class="session-time">3周前</span>
-          </div>
         </div>
       </div>
 
-      <!-- code -->
       <div class="project-node" data-project="code">
-        <div class="project-header" onclick="toggleProject(this)">
+        <div class="project-header" onclick="this.closest('.project-node').classList.toggle('expanded')">
           <span class="project-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></span>
           <span class="project-icon-dot" style="background:oklch(0.58 0.20 20)"></span>
           <span class="project-name-text">code</span>
@@ -723,44 +923,18 @@ html, body {
             <span class="session-title">晨间开发周报</span>
             <span class="session-time">11小时前</span>
           </div>
-          <div class="session-item" data-session="pm-resume">
-            <span class="session-title">生成 Vibe Coding 产品经理简历</span>
-            <span class="session-time">4天前</span>
-          </div>
-          <div class="session-item" data-session="doc-prompt">
-            <span class="session-title">生成文档整理提示词</span>
-            <span class="session-time">3周前</span>
-          </div>
         </div>
       </div>
-
-      <!-- NightShift 2.0 -->
-      <div class="project-node" data-project="nightshift">
-        <div class="project-header" onclick="toggleProject(this)">
-          <span class="project-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></span>
-          <span class="project-icon-dot" style="background:oklch(0.65 0.18 290)"></span>
-          <span class="project-name-text">NightShift 2.0</span>
-        </div>
-        <div class="session-list">
-          <div class="session-item" data-session="ns-review">
-            <span class="session-title">review 项目改进</span>
-            <span class="session-time">21小时前</span>
-          </div>
-        </div>
-      </div>
-
     </div>
 
     <button class="new-project-btn">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       New project
     </button>
+    </div>
 
-    </div><!-- /sidebar-scroll -->
-
-    <!-- Bottom settings -->
     <div class="sidebar-bottom">
-      <button class="settings-item">
+      <button class="settings-item" data-view="settings">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
         设置
       </button>
@@ -769,69 +943,459 @@ html, body {
 
   <!-- ========== MAIN CONTENT ========== -->
   <main id="main">
-    <header class="top-bar">
+
+    <!-- Top bar -->
+    <header class="top-bar" id="main-top-bar">
       <div class="top-bar-left">
-        <span class="session-breadcrumb" id="session-title">UI 复刻 Codex</span>
+        <span class="session-breadcrumb" id="session-title">对话</span>
       </div>
       <div class="top-bar-right">
-        <button class="top-btn" title="网络" aria-label="网络状态">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10"/></svg>
-        </button>
-        <button class="top-btn" id="toggle-right-panel" title="切换面板" aria-label="切换面板">
+        <button class="top-btn active" id="toggle-right-panel" title="切换面板">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
         </button>
       </div>
     </header>
 
-    <div id="chat-area">
-      <div class="welcome" id="welcome-state">
-        <div class="welcome-illustration">
-          <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+    <!-- ========== VIEW: CHAT ========== -->
+    <div class="view-container active" id="view-chat">
+      <div id="chat-area">
+        <div class="welcome" id="welcome-state">
+          <div class="welcome-illustration">
+            <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+          </div>
+          <h2>我们今天该做什么？</h2>
+          <p>描述你的任务，我会帮你规划、编码、审查并执行。</p>
         </div>
-        <h2>我们今天该做什么？</h2>
-        <p>描述你的任务，我会帮你规划、编码、审查并执行。</p>
+      </div>
+      <div id="input-bar">
+        <div class="input-wrapper">
+          <textarea id="user-input" placeholder="@ 插件提示 或描述你的需求..." rows="1" autofocus></textarea>
+          <div class="input-toolbar">
+            <div class="input-toolbar-left">
+              <button class="attach-btn" title="添加附件">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              </button>
+              <select class="permission-select">
+                <option>只读</option>
+                <option selected>允许编辑</option>
+                <option>允许执行</option>
+              </select>
+            </div>
+            <div class="input-toolbar-right">
+              <select class="model-select">
+                <option>Claude 4.5 Sonnet</option>
+                <option>GPT-5.1 Codex</option>
+                <option>GPT-5.1-mini</option>
+              </select>
+              <button class="mic-btn" title="语音输入">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+              </button>
+              <button class="send-btn" id="send-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+        <button class="mode-toggle" id="mode-toggle">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          进入项目工作
+        </button>
       </div>
     </div>
 
-    <!-- Input bar -->
-    <div id="input-bar">
-      <div class="input-wrapper">
-        <textarea id="user-input" placeholder="@ 插件提示 或描述你的需求..." rows="1" autofocus></textarea>
-        <div class="input-toolbar">
-          <div class="input-toolbar-left">
-            <button class="attach-btn" title="添加附件" aria-label="添加附件">
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            </button>
-            <select class="permission-select" aria-label="执行权限">
-              <option>只读</option>
-              <option selected>允许编辑</option>
-              <option>允许执行</option>
-            </select>
+    <!-- ========== VIEW: SEARCH ========== -->
+    <div class="view-container" id="view-search">
+      <div class="search-view-inner">
+        <div class="search-input-wrap">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input class="search-input-field" placeholder="搜索项目、文件、对话内容..." />
+        </div>
+        <div class="search-filters">
+          <button class="search-filter-tag active">全部</button>
+          <button class="search-filter-tag">对话</button>
+          <button class="search-filter-tag">文件</button>
+          <button class="search-filter-tag">代码</button>
+          <button class="search-filter-tag">命令</button>
+        </div>
+        <div class="search-results">
+          <div class="search-result-item">
+            <div class="search-result-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg></div>
+            <div class="search-result-main">
+              <div class="search-result-title"><mark>synapse</mark> 完善建议</div>
+              <div class="search-result-path">AI 终端 / 梳理 synapse 完善建议</div>
+              <div class="search-result-snippet">...目前 <mark>synapse</mark> 的实现中，Dream/Distill 模块暂时不进 Synapse core...</div>
+            </div>
+            <span class="search-result-badge">对话</span>
           </div>
-          <div class="input-toolbar-right">
-            <select class="model-select" aria-label="模型">
-              <option>Claude 4.5 Sonnet</option>
-              <option>GPT-5.1 Codex</option>
-              <option>GPT-5.1-mini</option>
-            </select>
-            <button class="mic-btn" title="语音输入" aria-label="语音输入">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-            </button>
-            <button class="send-btn" id="send-btn" aria-label="发送">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
-            </button>
+          <div class="search-result-item">
+            <div class="search-result-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+            <div class="search-result-main">
+              <div class="search-result-title"><mark>synapse</mark>-runtime-design-discussion.md</div>
+              <div class="search-result-path">mimocode-gui / docs / synapse-runtime-design-discussion.md</div>
+              <div class="search-result-snippet">## Synapse Runtime Architecture — Phase 1 Core Design...</div>
+            </div>
+            <span class="search-result-badge">文件</span>
+          </div>
+          <div class="search-result-item">
+            <div class="search-result-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div>
+            <div class="search-result-main">
+              <div class="search-result-title"><mark>synapse</mark>.ts — Runtime Core</div>
+              <div class="search-result-path">mimocode-gui / src / core / synapse.ts</div>
+              <div class="search-result-snippet">export class <mark>Synapse</mark>Runtime implements IRuntime { ... }</div>
+            </div>
+            <span class="search-result-badge">代码</span>
+          </div>
+          <div class="search-result-item">
+            <div class="search-result-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg></div>
+            <div class="search-result-main">
+              <div class="search-result-title">npm run <mark>synapse</mark>:dev</div>
+              <div class="search-result-path">终端命令历史</div>
+              <div class="search-result-snippet">启动 Synapse 开发环境的热重载构建服务。</div>
+            </div>
+            <span class="search-result-badge">命令</span>
           </div>
         </div>
       </div>
-      <button class="mode-toggle" id="mode-toggle">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-        进入项目工作
-      </button>
     </div>
+
+    <!-- ========== VIEW: PLUGINS ========== -->
+    <div class="view-container" id="view-plugins">
+      <div class="plugins-view-inner">
+        <div class="plugins-header">
+          <div class="plugins-title">插件</div>
+          <div class="plugins-tabs">
+            <button class="plugins-tab active">已安装</button>
+            <button class="plugins-tab">推荐</button>
+            <button class="plugins-tab">热门</button>
+          </div>
+        </div>
+        <input class="plugin-search" placeholder="搜索插件..." />
+        <div class="plugin-grid">
+          <div class="plugin-card">
+            <div class="plugin-card-top">
+              <div class="plugin-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div>
+              <div class="plugin-card-info">
+                <div class="plugin-card-name">Codex Workflow</div>
+                <div class="plugin-card-author">kialajin-l</div>
+              </div>
+            </div>
+            <div class="plugin-card-desc">多 Agent 深度编排插件，支持 Planner / Implementer / Reviewer / CLI Worker 四角色并行协作。</div>
+            <div class="plugin-card-meta">
+              <span>⭐ 128</span><span>v1.2.4</span>
+            </div>
+            <button class="plugin-card-action installed">已安装</button>
+          </div>
+          <div class="plugin-card">
+            <div class="plugin-card-top">
+              <div class="plugin-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg></div>
+              <div class="plugin-card-info">
+                <div class="plugin-card-name">Markdown Preview Enhanced</div>
+                <div class="plugin-card-author">shd101wyy</div>
+              </div>
+            </div>
+            <div class="plugin-card-desc">超强 Markdown 预览，支持流程图、时序图、数学公式、代码执行。</div>
+            <div class="plugin-card-meta">
+              <span>⭐ 4.2k</span><span>v0.8.10</span>
+            </div>
+            <button class="plugin-card-action installed">已安装</button>
+          </div>
+          <div class="plugin-card">
+            <div class="plugin-card-top">
+              <div class="plugin-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></div>
+              <div class="plugin-card-info">
+                <div class="plugin-card-name">MCP Bridge</div>
+                <div class="plugin-card-author">anthropic</div>
+              </div>
+            </div>
+            <div class="plugin-card-desc">Model Context Protocol 桥接器，连接外部工具和数据源。</div>
+            <div class="plugin-card-meta">
+              <span>⭐ 892</span><span>v0.3.1</span>
+            </div>
+            <button class="plugin-card-action">安装</button>
+          </div>
+          <div class="plugin-card">
+            <div class="plugin-card-top">
+              <div class="plugin-card-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="3"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg></div>
+              <div class="plugin-card-info">
+                <div class="plugin-card-name">Theme Studio</div>
+                <div class="plugin-card-author">mimo-lab</div>
+              </div>
+            </div>
+            <div class="plugin-card-desc">可视化主题编辑器，支持 OKLCH 色彩空间，实时预览与导出。</div>
+            <div class="plugin-card-meta">
+              <span>⭐ 567</span><span>v2.1.0</span>
+            </div>
+            <button class="plugin-card-action">安装</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== VIEW: AUTOMATION ========== -->
+    <div class="view-container" id="view-automation">
+      <div class="automation-view-inner">
+        <div class="automation-header">
+          <div class="automation-title">自动化</div>
+          <button class="automation-create-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            创建工作流
+          </button>
+        </div>
+        <div class="automation-stats">
+          <div class="automation-stat-card">
+            <div class="automation-stat-value">6</div>
+            <div class="automation-stat-label">工作流总数</div>
+          </div>
+          <div class="automation-stat-card">
+            <div class="automation-stat-value">142</div>
+            <div class="automation-stat-label">本周执行</div>
+          </div>
+          <div class="automation-stat-card">
+            <div class="automation-stat-value">99.3%</div>
+            <div class="automation-stat-label">成功率</div>
+          </div>
+        </div>
+        <div class="automation-list" style="margin-top:20px">
+          <div class="automation-item">
+            <div class="automation-item-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg></div>
+            <div class="automation-item-info">
+              <div class="automation-item-name">每日代码审查</div>
+              <div class="automation-item-desc">每天早上 9:00 自动审查昨日提交</div>
+            </div>
+            <div class="automation-item-status"><span class="status-dot running"></span>运行中</div>
+            <div class="automation-item-actions">
+              <button class="automation-item-btn" title="运行"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg></button>
+              <button class="automation-item-btn" title="更多"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></button>
+            </div>
+          </div>
+          <div class="automation-item">
+            <div class="automation-item-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22 6 12 13 2 6"/></svg></div>
+            <div class="automation-item-info">
+              <div class="automation-item-name">周报自动生成</div>
+              <div class="automation-item-desc">每周五 18:00 汇总本周提交生成周报</div>
+            </div>
+            <div class="automation-item-status"><span class="status-dot running"></span>运行中</div>
+            <div class="automation-item-actions">
+              <button class="automation-item-btn" title="运行"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg></button>
+              <button class="automation-item-btn" title="更多"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></button>
+            </div>
+          </div>
+          <div class="automation-item">
+            <div class="automation-item-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+            <div class="automation-item-info">
+              <div class="automation-item-name">文档整理提示词生成</div>
+              <div class="automation-item-desc">触发时自动生成结构化文档整理提示词</div>
+            </div>
+            <div class="automation-item-status"><span class="status-dot paused"></span>已暂停</div>
+            <div class="automation-item-actions">
+              <button class="automation-item-btn" title="运行"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg></button>
+              <button class="automation-item-btn" title="更多"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></button>
+            </div>
+          </div>
+          <div class="automation-item">
+            <div class="automation-item-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/></svg></div>
+            <div class="automation-item-info">
+              <div class="automation-item-name">CI 状态监控</div>
+              <div class="automation-item-desc">实时监听 GitHub Actions 状态变化并通知</div>
+            </div>
+            <div class="automation-item-status"><span class="status-dot idle"></span>待机</div>
+            <div class="automation-item-actions">
+              <button class="automation-item-btn" title="运行"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg></button>
+              <button class="automation-item-btn" title="更多"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== VIEW: SETTINGS ========== -->
+    <div class="view-container" id="view-settings">
+      <div class="settings-view-inner">
+        <div class="settings-nav">
+          <button class="settings-nav-item active" data-settings-panel="general">通用</button>
+          <button class="settings-nav-item" data-settings-panel="appearance">外观</button>
+          <button class="settings-nav-item" data-settings-panel="shortcuts">快捷键</button>
+          <button class="settings-nav-item" data-settings-panel="language">语言</button>
+          <button class="settings-nav-item" data-settings-panel="storage">存储</button>
+          <button class="settings-nav-item" data-settings-panel="about">关于</button>
+        </div>
+        <div class="settings-content">
+          <!-- General -->
+          <div class="settings-panel active" id="settings-general">
+            <div class="settings-section-title">通用设置</div>
+            <div class="settings-group">
+              <div class="settings-group-label">启动行为</div>
+              <div class="settings-row">
+                <div>
+                  <div class="settings-row-label">启动时恢复上次会话</div>
+                  <div class="settings-row-desc">打开应用时自动恢复上次未关闭的会话</div>
+                </div>
+                <button class="settings-toggle on" onclick="this.classList.toggle('on')"></button>
+              </div>
+              <div class="settings-row">
+                <div>
+                  <div class="settings-row-label">系统启动时自动运行</div>
+                  <div class="settings-row-desc">在 Windows 启动时自动启动 Mimo Code</div>
+                </div>
+                <button class="settings-toggle" onclick="this.classList.toggle('on')"></button>
+              </div>
+            </div>
+            <div class="settings-group">
+              <div class="settings-group-label">编辑器</div>
+              <div class="settings-row">
+                <div>
+                  <div class="settings-row-label">自动保存</div>
+                  <div class="settings-row-desc">在切换焦点时自动保存当前文件</div>
+                </div>
+                <button class="settings-toggle on" onclick="this.classList.toggle('on')"></button>
+              </div>
+              <div class="settings-row">
+                <div>
+                  <div class="settings-row-label">默认缩进</div>
+                  <div class="settings-row-desc"></div>
+                </div>
+                <select class="settings-select">
+                  <option>2 空格</option>
+                  <option selected>4 空格</option>
+                  <option>Tab</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <!-- Appearance -->
+          <div class="settings-panel" id="settings-appearance" style="display:none">
+            <div class="settings-section-title">外观设置</div>
+            <div class="settings-group">
+              <div class="settings-group-label">主题</div>
+              <div class="settings-row">
+                <div class="settings-row-label">颜色主题</div>
+                <select class="settings-select">
+                  <option selected>暗色 (默认)</option>
+                  <option>亮色</option>
+                  <option>高对比度</option>
+                </select>
+              </div>
+              <div class="settings-row">
+                <div class="settings-row-label">强调色</div>
+                <select class="settings-select">
+                  <option selected>蓝紫 (默认)</option>
+                  <option>青色</option>
+                  <option>绿色</option>
+                  <option>琥珀</option>
+                </select>
+              </div>
+            </div>
+            <div class="settings-group">
+              <div class="settings-group-label">字体</div>
+              <div class="settings-row">
+                <div class="settings-row-label">字号</div>
+                <select class="settings-select">
+                  <option>13px</option>
+                  <option selected>14px</option>
+                  <option>16px</option>
+                </select>
+              </div>
+              <div class="settings-row">
+                <div class="settings-row-label">玻璃拟态效果</div>
+                <button class="settings-toggle on" onclick="this.classList.toggle('on')"></button>
+              </div>
+            </div>
+          </div>
+          <!-- Shortcuts -->
+          <div class="settings-panel" id="settings-shortcuts" style="display:none">
+            <div class="settings-section-title">快捷键</div>
+            <div class="settings-group">
+              <div class="settings-row">
+                <div class="settings-row-label">切换侧边栏</div>
+                <span style="color:var(--text-tertiary);font-family:'JetBrains Mono',monospace;font-size:12px">Ctrl + B</span>
+              </div>
+              <div class="settings-row">
+                <div class="settings-row-label">切换右侧面板</div>
+                <span style="color:var(--text-tertiary);font-family:'JetBrains Mono',monospace;font-size:12px">Ctrl + Shift + B</span>
+              </div>
+              <div class="settings-row">
+                <div class="settings-row-label">新建会话</div>
+                <span style="color:var(--text-tertiary);font-family:'JetBrains Mono',monospace;font-size:12px">Ctrl + N</span>
+              </div>
+              <div class="settings-row">
+                <div class="settings-row-label">全局搜索</div>
+                <span style="color:var(--text-tertiary);font-family:'JetBrains Mono',monospace;font-size:12px">Ctrl + P</span>
+              </div>
+              <div class="settings-row">
+                <div class="settings-row-label">发送消息</div>
+                <span style="color:var(--text-tertiary);font-family:'JetBrains Mono',monospace;font-size:12px">Enter</span>
+              </div>
+              <div class="settings-row">
+                <div class="settings-row-label">换行</div>
+                <span style="color:var(--text-tertiary);font-family:'JetBrains Mono',monospace;font-size:12px">Shift + Enter</span>
+              </div>
+            </div>
+          </div>
+          <!-- Language -->
+          <div class="settings-panel" id="settings-language" style="display:none">
+            <div class="settings-section-title">语言</div>
+            <div class="settings-group">
+              <div class="settings-row">
+                <div class="settings-row-label">界面语言</div>
+                <select class="settings-select">
+                  <option selected>简体中文</option>
+                  <option>English</option>
+                  <option>日本語</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <!-- Storage -->
+          <div class="settings-panel" id="settings-storage" style="display:none">
+            <div class="settings-section-title">存储</div>
+            <div class="settings-group">
+              <div class="settings-row">
+                <div>
+                  <div class="settings-row-label">工作目录</div>
+                  <div class="settings-row-desc" style="font-family:'JetBrains Mono',monospace;font-size:11px">E:\code\mimocode-gui</div>
+                </div>
+                <button class="settings-row-btn" style="padding:4px 12px;border-radius:6px;border:1px solid var(--border-default);background:transparent;color:var(--text-secondary);cursor:pointer;font-family:inherit;font-size:12px">更改</button>
+              </div>
+              <div class="settings-row">
+                <div>
+                  <div class="settings-row-label">会话历史保留</div>
+                  <div class="settings-row-desc"></div>
+                </div>
+                <select class="settings-select">
+                  <option>30 天</option>
+                  <option selected>90 天</option>
+                  <option>永久</option>
+                </select>
+              </div>
+              <div class="settings-row">
+                <div>
+                  <div class="settings-row-label">缓存大小</div>
+                  <div class="settings-row-desc">可清除以释放磁盘空间</div>
+                </div>
+                <button class="settings-row-btn" style="padding:4px 12px;border-radius:6px;border:1px solid var(--border-default);background:transparent;color:var(--text-secondary);cursor:pointer;font-family:inherit;font-size:12px">清除缓存</button>
+              </div>
+            </div>
+          </div>
+          <!-- About -->
+          <div class="settings-panel" id="settings-about" style="display:none">
+            <div class="settings-about">
+              <div class="settings-about-logo">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.6"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+              </div>
+              <div class="settings-about-name">Mimo Code</div>
+              <div class="settings-about-version">v1.0.0 — Build 2026.06.13</div>
+              <div style="font-size:12px;color:var(--text-tertiary);margin-top:4px">Codex Desktop 风格复刻原型</div>
+              <div style="font-size:11px;color:var(--text-disabled);margin-top:8px">基于 OKLCH 色彩空间 · Manrope + JetBrains Mono · 玻璃拟态</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </main>
 
   <!-- ========== RIGHT PANEL ========== -->
-  <aside id="right-panel">
+  <aside id="right-panel" class="open">
     <div class="panel-tabs">
       <button class="panel-tab active" data-panel="review">审查</button>
       <button class="panel-tab" data-panel="terminal">终端</button>
@@ -845,10 +1409,7 @@ html, body {
       <div id="review-files" style="display:none">
         <div class="review-file">
           <div class="review-file-header">
-            <div class="review-file-name">
-              <span class="file-status modified">已修改</span>
-              src/renderer/App.tsx
-            </div>
+            <div class="review-file-name"><span class="file-status modified">已修改</span> src/renderer/App.tsx</div>
             <div class="review-actions">
               <button class="review-accept" title="接受">&#10003;</button>
               <button class="review-reject" title="拒绝">&#10005;</button>
@@ -859,15 +1420,11 @@ html, body {
             <div class="diff-line context"> import { useState } from 'react'</div>
             <div class="diff-line removed">-const App = () => {</div>
             <div class="diff-line added">+const App: React.FC = () => {</div>
-            <div class="diff-line context">   return (</div>
           </div>
         </div>
         <div class="review-file">
           <div class="review-file-header">
-            <div class="review-file-name">
-              <span class="file-status created">新建</span>
-              src/styles/theme.css
-            </div>
+            <div class="review-file-name"><span class="file-status created">新建</span> src/styles/theme.css</div>
             <div class="review-actions">
               <button class="review-accept" title="接受">&#10003;</button>
               <button class="review-reject" title="拒绝">&#10005;</button>
@@ -908,67 +1465,173 @@ html, body {
 
 <script>
 /* ============================================================
-   INTERACTIONS
+   SCRIPT — SPA routing, menus, chat, panel
    ============================================================ */
 
-// --- DOM refs ---
-const chatArea       = document.getElementById('chat-area');
-const userInput      = document.getElementById('user-input');
-const sendBtn        = document.getElementById('send-btn');
-const welcomeState   = document.getElementById('welcome-state');
-const rightPanel     = document.getElementById('right-panel');
-const toggleRightBtn = document.getElementById('toggle-right-panel');
-const modeToggle     = document.getElementById('mode-toggle');
-const sessionTitle   = document.getElementById('session-title');
-const reviewFiles    = document.getElementById('review-files');
-const reviewPH       = document.getElementById('review-placeholder');
+const $ = (s) => document.querySelector(s);
+const $$ = (s) => document.querySelectorAll(s);
 
-// --- Toggle project expand/collapse ---
-function toggleProject(header) {
-  const node = header.closest('.project-node');
-  node.classList.toggle('expanded');
+// ====== DOM refs ======
+const chatArea       = $('#chat-area');
+const userInput      = $('#user-input');
+const sendBtn        = $('#send-btn');
+const welcomeState   = $('#welcome-state');
+const rightPanel     = $('#right-panel');
+const toggleRightBtn = $('#toggle-right-panel');
+const modeToggle     = $('#mode-toggle');
+const sessionTitle   = $('#session-title');
+const reviewFiles    = $('#review-files');
+const reviewPH       = $('#review-placeholder');
+const inputBar       = $('#input-bar');
+const mainTopBar     = $('#main-top-bar');
+
+// ====== Menu dropdowns ======
+let openMenu = null;
+document.addEventListener('click', (e) => {
+  const menuBtn = e.target.closest('.menu-item-top');
+  if (menuBtn) {
+    const menuName = menuBtn.dataset.menu;
+    const dropdown = $(`#dropdown-${menuName}`);
+    if (!dropdown) return;
+    if (openMenu && openMenu !== dropdown) { openMenu.classList.remove('show'); }
+    dropdown.classList.toggle('show');
+    openMenu = dropdown.classList.contains('show') ? dropdown : null;
+    e.stopPropagation();
+    return;
+  }
+  if (!e.target.closest('.dropdown-menu')) {
+    if (openMenu) { openMenu.classList.remove('show'); openMenu = null; }
+  }
+});
+// Close menu on Escape
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && openMenu) { openMenu.classList.remove('show'); openMenu = null; }
+});
+// Dropdown actions
+$$('.dropdown-item[data-action="toggle-sidebar"]').forEach(item => {
+  item.addEventListener('click', () => {
+    const sidebar = $('#sidebar');
+    sidebar.style.display = sidebar.style.display === 'none' ? '' : 'none';
+  });
+});
+$$('.dropdown-item[data-action="toggle-panel"]').forEach(item => {
+  item.addEventListener('click', () => toggleRightBtn.click());
+});
+
+// ====== View switching ======
+const topBar = $('#main-top-bar');
+let currentView = 'chat';
+
+function switchView(viewId) {
+  // Deactivate all views
+  $$('.view-container.active').forEach(v => v.classList.remove('active'));
+  // Activate target
+  const target = $(`#view-${viewId}`);
+  if (target) target.classList.add('active');
+
+  // Show/hide input bar and top bar based on view
+  if (viewId === 'chat') {
+    inputBar.classList.remove('hidden');
+    topBar.style.display = '';
+    sessionTitle.textContent = '对话';
+    document.querySelector('.quick-item.active')?.classList.remove('active');
+    document.querySelector('.quick-item[data-view="chat"]')?.classList.add('active');
+    document.querySelector('.settings-item.active')?.classList.remove('active');
+  } else if (viewId === 'settings') {
+    inputBar.classList.add('hidden');
+    topBar.style.display = '';
+    sessionTitle.textContent = '设置';
+    document.querySelector('.quick-item.active')?.classList.remove('active');
+    $$('.quick-item').forEach(q => q.classList.remove('active'));
+    document.querySelector('.settings-item').classList.add('active');
+  } else {
+    inputBar.classList.add('hidden');
+    topBar.style.display = '';
+    sessionTitle.textContent = viewId.charAt(0).toUpperCase() + viewId.slice(1);
+    document.querySelector('.settings-item.active')?.classList.remove('active');
+    // Highlight correct quick item
+    $$('.quick-item').forEach(q => q.classList.remove('active'));
+    const qi = document.querySelector(`.quick-item[data-view="${viewId}"]`);
+    if (qi) qi.classList.add('active');
+  }
+  currentView = viewId;
 }
 
-// --- Session click ---
-document.querySelectorAll('.session-item').forEach(item => {
+// Sidebar quick items
+$$('.quick-item[data-view]').forEach(item => {
+  item.addEventListener('click', () => switchView(item.dataset.view));
+});
+
+// Settings button
+$('.settings-item').addEventListener('click', () => switchView('settings'));
+
+// Settings sub-navigation
+$$('.settings-nav-item').forEach(item => {
   item.addEventListener('click', function() {
-    document.querySelectorAll('.session-item').forEach(i => i.classList.remove('active'));
+    $$('.settings-nav-item').forEach(n => n.classList.remove('active'));
     this.classList.add('active');
-    sessionTitle.textContent = this.querySelector('.session-title').textContent;
+    const panel = this.dataset.settingsPanel;
+    $$('.settings-panel').forEach(p => p.style.display = 'none');
+    const target = $(`#settings-${panel}`);
+    if (target) target.style.display = '';
   });
 });
 
-// --- Toggle right panel ---
-let panelOpen = false;
+// Plugins tabs
+$$('.plugins-tab').forEach(tab => {
+  tab.addEventListener('click', function() {
+    $$('.plugins-tab').forEach(t => t.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+
+// Search filter tags
+$$('.search-filter-tag').forEach(tag => {
+  tag.addEventListener('click', function() {
+    $$('.search-filter-tag').forEach(t => t.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+
+// ====== Session click ======
+$$('.session-item').forEach(item => {
+  item.addEventListener('click', function() {
+    $$('.session-item').forEach(i => i.classList.remove('active'));
+    this.classList.add('active');
+    sessionTitle.textContent = this.querySelector('.session-title').textContent;
+    switchView('chat');
+  });
+});
+
+// ====== Right panel ======
+let panelOpen = true;
 toggleRightBtn.addEventListener('click', () => {
   panelOpen = !panelOpen;
   rightPanel.classList.toggle('open', panelOpen);
   toggleRightBtn.classList.toggle('active', panelOpen);
 });
 
-// --- Panel tabs ---
-document.querySelectorAll('.panel-tab').forEach(tab => {
+// Panel tabs
+$$('.panel-tab').forEach(tab => {
   tab.addEventListener('click', function() {
-    document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
+    $$('.panel-tab').forEach(t => t.classList.remove('active'));
     this.classList.add('active');
     const panel = this.dataset.panel;
-    document.getElementById('panel-review').style.display = panel === 'review' ? '' : 'none';
-    document.getElementById('panel-terminal').style.display = panel === 'terminal' ? '' : 'none';
+    $('#panel-review').style.display = panel === 'review' ? '' : 'none';
+    $('#panel-terminal').style.display = panel === 'terminal' ? '' : 'none';
   });
 });
 
-// --- Auto-resize textarea ---
+// ====== Chat ======
 userInput.addEventListener('input', () => {
   userInput.style.height = 'auto';
   userInput.style.height = Math.min(userInput.scrollHeight, 200) + 'px';
   sendBtn.disabled = !userInput.value.trim();
 });
 
-// --- Send message ---
 function sendMessage() {
   const text = userInput.value.trim();
   if (!text) return;
-
   welcomeState.classList.add('hidden');
 
   const userMsg = document.createElement('div');
@@ -977,8 +1640,7 @@ function sendMessage() {
     <div class="message-row">
       <div class="message-avatar avatar-user">U</div>
       <div class="message-content"><p>${escapeHtml(text)}</p></div>
-    </div>
-  `;
+    </div>`;
   chatArea.appendChild(userMsg);
 
   userInput.value = ''; userInput.style.height = 'auto'; sendBtn.disabled = true;
@@ -993,21 +1655,11 @@ function sendMessage() {
         <div class="message-content">
           <p>收到。已分析当前项目结构。以下是建议的修改：</p>
           <div class="code-block">
-            <div class="code-header">
-              <div class="code-lang">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-                TypeScript
-              </div>
-              <button class="copy-btn">复制</button>
-            </div>
+            <div class="code-header"><div class="code-lang"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>TypeScript</div><button class="copy-btn">复制</button></div>
             <div class="code-body" style="color:oklch(0.72 0.005 260)">
 <span style="color:oklch(0.65 0.15 280)">import</span> { app, BrowserWindow } <span style="color:oklch(0.65 0.15 280)">from</span> <span style="color:oklch(0.65 0.18 140)">'electron'</span>;
-<span style="color:oklch(0.65 0.15 280)">import</span> path <span style="color:oklch(0.65 0.15 280)">from</span> <span style="color:oklch(0.65 0.18 140)">'path'</span>;
-
 <span style="color:oklch(0.65 0.15 280)">const</span> <span style="color:oklch(0.72 0.14 80)">createWindow</span> = () => {
   <span style="color:oklch(0.65 0.15 280)">const</span> win = <span style="color:oklch(0.65 0.15 280)">new</span> <span style="color:oklch(0.72 0.16 200)">BrowserWindow</span>({
-    width: <span style="color:oklch(0.65 0.18 140)">1400</span>,
-    height: <span style="color:oklch(0.65 0.18 140)">900</span>,
     backgroundColor: <span style="color:oklch(0.65 0.18 140)">'#0d0d0d'</span>,
     titleBarStyle: <span style="color:oklch(0.65 0.18 140)">'hiddenInset'</span>,
   });
@@ -1017,15 +1669,8 @@ function sendMessage() {
           </div>
           <div class="file-card">
             <div class="file-card-header">
-              <div class="file-card-left">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                <span>src/renderer/App.tsx</span>
-                <span class="file-status modified">已修改</span>
-              </div>
-              <div class="file-stat">
-                <span class="added">+106</span>
-                <span class="removed">-0</span>
-              </div>
+              <div class="file-card-left"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--yellow)" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span>src/renderer/App.tsx</span><span class="file-status modified">已修改</span></div>
+              <div class="file-stat"><span class="added">+106</span><span class="removed">-0</span></div>
             </div>
             <div class="file-diff">
               <div class="diff-line header">@@ -12,7 +12,16 @@</div>
@@ -1033,13 +1678,11 @@ function sendMessage() {
               <div class="diff-line removed">-const App = () => {</div>
               <div class="diff-line added">+interface AppProps { theme?: 'dark' | 'light' }</div>
               <div class="diff-line added">+const App: React.FC&lt;AppProps&gt; = ({ theme = 'dark' }) => {</div>
-              <div class="diff-line context">   return (</div>
             </div>
           </div>
           <p>Electron 主进程配置已完成，需要我对哪些部分做进一步调整？</p>
         </div>
-      </div>
-    `;
+      </div>`;
     chatArea.appendChild(aiMsg);
     chatArea.scrollTop = chatArea.scrollHeight;
 
@@ -1054,8 +1697,8 @@ userInput.addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
 });
 
-// --- Review accept/reject ---
-document.querySelectorAll('.review-accept, .review-reject').forEach(btn => {
+// ====== Review accept/reject ======
+$$('.review-accept, .review-reject').forEach(btn => {
   btn.addEventListener('click', function() {
     const file = this.closest('.review-file');
     file.style.opacity = '0.4'; file.style.pointerEvents = 'none';
@@ -1063,7 +1706,7 @@ document.querySelectorAll('.review-accept, .review-reject').forEach(btn => {
   });
 });
 
-// --- Copy buttons ---
+// ====== Copy buttons ======
 document.addEventListener('click', e => {
   if (e.target.classList.contains('copy-btn')) {
     const code = e.target.closest('.code-block').querySelector('.code-body').textContent;
@@ -1074,8 +1717,8 @@ document.addEventListener('click', e => {
   }
 });
 
-// --- Right panel resize ---
-const resizeHandle = document.getElementById('resize-handle');
+// ====== Right panel resize ======
+const resizeHandle = $('#resize-handle');
 let isResizing = false, startX, startWidth;
 resizeHandle.addEventListener('mousedown', e => {
   isResizing = true; startX = e.clientX; startWidth = rightPanel.offsetWidth;
@@ -1090,17 +1733,17 @@ document.addEventListener('mouseup', () => {
   if (isResizing) { isResizing = false; document.body.style.cursor = ''; document.body.style.userSelect = ''; }
 });
 
-// --- Mode toggle ---
+// ====== Mode toggle ======
 modeToggle.addEventListener('click', function() {
   this.classList.toggle('active');
   this.innerHTML = this.classList.contains('active')
-    ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> 退出项目工作`
-    : `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> 进入项目工作`;
+    ? '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> 退出项目工作'
+    : '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg> 进入项目工作';
 });
 
-// --- Keyboard: Ctrl+B toggle panel ---
+// Keyboard: Ctrl+B toggle panel
 document.addEventListener('keydown', e => {
-  if ((e.metaKey || e.ctrlKey) && e.key === 'b') { e.preventDefault(); toggleRightBtn.click(); }
+  if ((e.metaKey || e.ctrlKey) && e.key === 'b' && !e.shiftKey) { e.preventDefault(); toggleRightBtn.click(); }
 });
 
 sendBtn.disabled = true;
