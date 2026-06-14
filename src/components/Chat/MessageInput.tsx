@@ -34,7 +34,7 @@ export function readInputPrefs(): InputPrefs {
 }
 
 interface MessageInputProps {
-  onSend: (message: string, model: string, permission: string, reasoning: string) => void
+  onSend: (message: string, model: string, permission: string, reasoning: string, mode: string) => void
   onCancel?: () => void
   disabled?: boolean
   isRunning?: boolean
@@ -122,7 +122,7 @@ export function MessageInput({ onSend, onCancel, disabled, isRunning, onNewSessi
         message = `---\nfile: ${attachedFile}\n---\n\n${message}`
         setAttachedFile(null)
       }
-      onSend(message, model, permission, reasoning)
+      onSend(message, model, permission, reasoning, mode)
       setInput('')
     }
   }

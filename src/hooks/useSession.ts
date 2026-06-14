@@ -19,7 +19,7 @@ export function useSession() {
   const activeSessionIdRef = useRef(activeSessionId)
   activeSessionIdRef.current = activeSessionId
 
-  const sendMessage = useCallback(async (content: string, model?: string, permission?: string, reasoning?: string) => {
+  const sendMessage = useCallback(async (content: string, model?: string, permission?: string, reasoning?: string, mode?: string) => {
     let sessionId = activeSessionIdRef.current
     if (!sessionId) {
       const sessionName = content.split('\n').find(line => line.trim() && !line.startsWith('Mode:') && !line.startsWith('Workflow:'))?.trim().slice(0, 40) || 'New Session'
@@ -165,7 +165,7 @@ export function useSession() {
 
       api.onMessageChunk(sessionId, handleChunk)
       const variant = reasoning && reasoning !== 'default' ? reasoning : undefined
-      const result = await api.sendMessage(sessionId, content, cwd, model, permission, variant, requestId)
+      const result = await api.sendMessage(sessionId, content, cwd, model, permission, variant, mode)
       api.removeMessageChunkListener(sessionId)
       clearReleaseTimer()
 

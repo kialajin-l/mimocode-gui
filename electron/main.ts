@@ -57,7 +57,7 @@ async function createWindow() {
   })
 }
 
-ipcMain.handle('send-message', async (_, sessionId: string, message: string, cwd?: string, model?: string, permission?: string, variant?: string, requestId?: string) => {
+ipcMain.handle('send-message', async (_, sessionId: string, message: string, cwd?: string, model?: string, permission?: string, variant?: string, mode?: string) => {
   try {
     return await new Promise((resolve) => {
       sendMessage(message, {
@@ -66,9 +66,10 @@ ipcMain.handle('send-message', async (_, sessionId: string, message: string, cwd
         model,
         variant,
         permission,
+        mode,
         onChunk: (chunk) => {
           try {
-            mainWindow?.webContents.send('message-chunk', sessionId, { ...chunk, requestId })
+            mainWindow?.webContents.send('message-chunk', sessionId, chunk)
           } catch (e) {
             console.error('[Main] Failed to send chunk:', e)
           }

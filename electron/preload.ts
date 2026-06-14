@@ -12,8 +12,8 @@ function safeInvoke(channel: string, ...args: any[]): Promise<any> {
 
 contextBridge.exposeInMainWorld('electronAPI', {
   // Chat messaging
-  sendMessage: (sessionId: string, message: string, cwd?: string, model?: string, permission?: string, variant?: string, requestId?: string) =>
-    safeInvoke('send-message', sessionId, message, cwd, model, permission, variant, requestId),
+  sendMessage: (sessionId: string, message: string, cwd?: string, model?: string, permission?: string, variant?: string, mode?: string) =>
+    safeInvoke('send-message', sessionId, message, cwd, model, permission, variant, mode),
 
   cancelMessage: (sessionId: string) =>
     safeInvoke('cancel-message', sessionId),

@@ -32,7 +32,9 @@ export function SideStatusCard({ session, project }: SideStatusCardProps) {
               if (config && Object.keys(config).length > 0) {
                 setMcpStatus('connected')
               }
-            } catch {}
+            } catch (e) {
+              console.warn('[SideStatusCard] MCP config parse error:', e)
+            }
           }
         }).catch(() => {})
       }

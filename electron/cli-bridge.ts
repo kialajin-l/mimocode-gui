@@ -68,6 +68,7 @@ export async function sendMessage(
     model?: string
     variant?: string
     permission?: string
+    mode?: string
     onChunk?: (chunk: { type: string; content: string }) => void
     onComplete?: (fullText: string) => void
     onError?: (error: string) => void
@@ -83,9 +84,7 @@ export async function sendMessage(
     if (options.variant) {
       args.push('--variant', options.variant)
     }
-    const modeMatch = message.match(/^---\nmode:\s*(compose|plan|build)\n---/)
-    const mode = modeMatch?.[1]
-    const effectivePermission = options.permission ?? (mode === 'build' ? 'execute' : 'edit')
+    const effectivePermission = options.permission ?? (options.mode === 'build' ? 'execute' : 'edit')
     if (effectivePermission === 'execute') {
       args.push('--dangerously-skip-permissions')
     }

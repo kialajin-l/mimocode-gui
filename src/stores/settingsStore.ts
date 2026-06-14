@@ -6,6 +6,7 @@ interface SettingsState {
   defaultPermission: string
   showStatusCard: boolean
   _currentSettings: Record<string, unknown>
+  _initialized: boolean
   setDefaultModel: (model: string) => void
   setDefaultReasoning: (reasoning: string) => void
   setDefaultPermission: (permission: string) => void
@@ -28,22 +29,30 @@ function saveToLocalStorage(key: string, value: unknown) {
 }
 
 async function loadAllSettings(): Promise<Record<string, unknown> | null> {
-  const api = window.electronAPI
-  if (!api?.getSettings) return null
+  if (typeof window === 'undefined') return null
   try {
-    return await api.getSettings()
-  } catch {
-    return null
+    const api = (window as any).electronAPI
+    if (api?.getSettings) {
+      const result = await api.getSettings()
+      if (result?.success && result.settings) {
+        return result.settings
+      }
+    }
+  } catch (err) {
+    console.warn('[Settings] Failed to load from IPC, using localStorage', err)
   }
+  return null
 }
 
-async function saveAllSettings(settings: Record<string, unknown>): Promise<void> {
-  const api = window.electronAPI
-  if (!api?.setSettings) return
+async function saveAllSettings(settings: Record<string, unknown>) {
+  if (typeof window === 'undefined') return
   try {
-    await api.setSettings(settings)
-  } catch {
-    // silently fall back to localStorage only
+    const api = (window as any).electronAPI
+    if (api?.setSettings) {
+      await api.setSettings(settings)
+    }
+  } catch (err) {
+    console.warn('[Settings] IPC save failed, using localStorage fallback', err)
   }
 }
 
@@ -61,6 +70,7 @@ async function initializeStore(set: (partial: Partial<SettingsState>) => void) {
       defaultPermission: (persisted.defaultPermission as string) ?? loadSettingFromLocalStorage('defaultPermission', 'ask'),
       showStatusCard: (persisted.showStatusCard as boolean) ?? loadSettingFromLocalStorage('showStatusCard', true),
       _currentSettings: persisted,
+      _initialized: true,
     })
   } else {
     const defaults = {
@@ -69,7 +79,7 @@ async function initializeStore(set: (partial: Partial<SettingsState>) => void) {
       defaultPermission: loadSettingFromLocalStorage('defaultPermission', 'ask'),
       showStatusCard: loadSettingFromLocalStorage('showStatusCard', true),
     }
-    set({ ...defaults, _currentSettings: defaults })
+    set({ ...defaults, _currentSettings: defaults, _initialized: true })
     await saveAllSettings(defaults)
   }
 }
@@ -83,6 +93,7 @@ export const useSettingsStore = create<SettingsState>((set) => {
     defaultPermission: loadSettingFromLocalStorage('defaultPermission', 'ask'),
     showStatusCard: loadSettingFromLocalStorage('showStatusCard', true),
     _currentSettings: {},
+    _initialized: false,
 
     setDefaultModel: (model) => {
       const current = useSettingsStore.getState()._currentSettings
