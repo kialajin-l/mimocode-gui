@@ -83,7 +83,10 @@ export async function sendMessage(
     if (options.variant) {
       args.push('--variant', options.variant)
     }
-    if (options.permission === 'execute') {
+    const modeMatch = message.match(/^---\nmode:\s*(compose|plan|build)\n---/)
+    const mode = modeMatch?.[1]
+    const effectivePermission = options.permission ?? (mode === 'build' ? 'execute' : 'edit')
+    if (effectivePermission === 'execute') {
       args.push('--dangerously-skip-permissions')
     }
 

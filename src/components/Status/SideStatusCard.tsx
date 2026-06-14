@@ -17,14 +17,14 @@ export function SideStatusCard({ session, project }: SideStatusCardProps) {
   const prefs = readInputPrefs()
   const estimatedTokens = Math.max(0, session?.messages.reduce((sum, message) => sum + Math.ceil(message.content.length / CHARS_PER_TOKEN), 0) || 0)
   const contextUsed = Math.min(100, Math.round((estimatedTokens / CONTEXT_LIMIT) * 100))
-  const tasks = buildTasks(messageCount, changes.length)
+
   const [mcpStatus, setMcpStatus] = useState<'connected' | 'disconnected'>('disconnected')
 
   useEffect(() => {
     const api = window.electronAPI
     if (!api) return
     api.getMimoPath().then(mimoPath => {
-      if (mimoPath && !mimoPath.includes('..') && /^[A-Za-z]:[\\/]/.test(mimoPath)) {
+      if (mimoPath && !mimoPath.includes('..') && (/^[A-Za-z]:/.test(mimoPath) || mimoPath.startsWith('/'))) {
         api.readFile(`${mimoPath}/mcp.json`).then(result => {
           if (result?.success && result.content) {
             try {
@@ -74,6 +74,7 @@ export function SideStatusCard({ session, project }: SideStatusCardProps) {
         </p>
       </div>
 
+      {/* LSP not yet integrated — waiting for language server protocol support */}
       <div className="status-terminal-section">
         <h4>LSP</h4>
         <p>待接入</p>
@@ -84,11 +85,12 @@ export function SideStatusCard({ session, project }: SideStatusCardProps) {
         <p><span className="orange-dot" /> 当前未设置目标</p>
       </div>
 
-      <div className="status-terminal-section">
-        <h4>▼ Tasks (估算)</h4>
-        {tasks.map(task => <p key={task}>[·] {task}</p>)}
-        <p>▸ {Math.max(0, messageCount - tasks.length)} more done</p>
-      </div>
+      {messageCount > 0 && (
+        <div className="status-terminal-section">
+          <h4>▼ Tasks (估算)</h4>
+          <p>{messageCount} 条消息已处理</p>
+        </div>
+      )}
 
       <div className="status-terminal-section">
         <h4>▸ Modified Files</h4>
@@ -103,9 +105,3 @@ export function SideStatusCard({ session, project }: SideStatusCardProps) {
   )
 }
 
-function buildTasks(messageCount: number, changeCount: number) {
-  const tasks = ['准备项目上下文', '读取会话状态']
-  if (messageCount > 0) tasks.push('处理用户任务')
-  if (changeCount > 0) tasks.push('检查修改文件')
-  return tasks
-}

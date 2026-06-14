@@ -5,6 +5,7 @@ interface SettingsState {
   defaultReasoning: string
   defaultPermission: string
   showStatusCard: boolean
+  _currentSettings: Record<string, unknown>
   setDefaultModel: (model: string) => void
   setDefaultReasoning: (reasoning: string) => void
   setDefaultPermission: (permission: string) => void
@@ -47,7 +48,6 @@ async function saveAllSettings(settings: Record<string, unknown>): Promise<void>
 }
 
 let initialized = false
-let currentSettings: Record<string, unknown> = {}
 
 async function initializeStore(set: (partial: Partial<SettingsState>) => void) {
   if (initialized) return
@@ -55,23 +55,22 @@ async function initializeStore(set: (partial: Partial<SettingsState>) => void) {
 
   const persisted = await loadAllSettings()
   if (persisted && Object.keys(persisted).length > 0) {
-    currentSettings = persisted
     set({
       defaultModel: (persisted.defaultModel as string) ?? loadSettingFromLocalStorage('defaultModel', 'auto'),
       defaultReasoning: (persisted.defaultReasoning as string) ?? loadSettingFromLocalStorage('defaultReasoning', 'medium'),
       defaultPermission: (persisted.defaultPermission as string) ?? loadSettingFromLocalStorage('defaultPermission', 'ask'),
       showStatusCard: (persisted.showStatusCard as boolean) ?? loadSettingFromLocalStorage('showStatusCard', true),
+      _currentSettings: persisted,
     })
   } else {
-    // No IPC settings yet — load from localStorage and persist to IPC
-    currentSettings = {
+    const defaults = {
       defaultModel: loadSettingFromLocalStorage('defaultModel', 'auto'),
       defaultReasoning: loadSettingFromLocalStorage('defaultReasoning', 'medium'),
       defaultPermission: loadSettingFromLocalStorage('defaultPermission', 'ask'),
       showStatusCard: loadSettingFromLocalStorage('showStatusCard', true),
     }
-    set(currentSettings as Partial<SettingsState>)
-    await saveAllSettings(currentSettings)
+    set({ ...defaults, _currentSettings: defaults })
+    await saveAllSettings(defaults)
   }
 }
 
@@ -83,33 +82,38 @@ export const useSettingsStore = create<SettingsState>((set) => {
     defaultReasoning: loadSettingFromLocalStorage('defaultReasoning', 'medium'),
     defaultPermission: loadSettingFromLocalStorage('defaultPermission', 'ask'),
     showStatusCard: loadSettingFromLocalStorage('showStatusCard', true),
+    _currentSettings: {},
 
     setDefaultModel: (model) => {
-      currentSettings.defaultModel = model
+      const current = useSettingsStore.getState()._currentSettings
+      const updated = { ...current, defaultModel: model }
       saveToLocalStorage('defaultModel', model)
-      saveAllSettings(currentSettings)
-      set({ defaultModel: model })
+      saveAllSettings(updated)
+      set({ defaultModel: model, _currentSettings: updated })
     },
 
     setDefaultReasoning: (reasoning) => {
-      currentSettings.defaultReasoning = reasoning
+      const current = useSettingsStore.getState()._currentSettings
+      const updated = { ...current, defaultReasoning: reasoning }
       saveToLocalStorage('defaultReasoning', reasoning)
-      saveAllSettings(currentSettings)
-      set({ defaultReasoning: reasoning })
+      saveAllSettings(updated)
+      set({ defaultReasoning: reasoning, _currentSettings: updated })
     },
 
     setDefaultPermission: (permission) => {
-      currentSettings.defaultPermission = permission
+      const current = useSettingsStore.getState()._currentSettings
+      const updated = { ...current, defaultPermission: permission }
       saveToLocalStorage('defaultPermission', permission)
-      saveAllSettings(currentSettings)
-      set({ defaultPermission: permission })
+      saveAllSettings(updated)
+      set({ defaultPermission: permission, _currentSettings: updated })
     },
 
     setShowStatusCard: (show) => {
-      currentSettings.showStatusCard = show
+      const current = useSettingsStore.getState()._currentSettings
+      const updated = { ...current, showStatusCard: show }
       saveToLocalStorage('showStatusCard', show)
-      saveAllSettings(currentSettings)
-      set({ showStatusCard: show })
+      saveAllSettings(updated)
+      set({ showStatusCard: show, _currentSettings: updated })
     },
   }
 })
