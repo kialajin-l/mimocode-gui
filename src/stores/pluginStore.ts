@@ -9,6 +9,15 @@ export interface Plugin {
   source?: 'registered' | 'discovered'
 }
 
+interface ScannedPlugin {
+  id: string
+  name: string
+  description: string
+  path: string
+  source: string
+  enabled: boolean
+}
+
 interface PluginState {
   plugins: Plugin[]
   loaded: boolean
@@ -72,7 +81,7 @@ export const usePluginStore = create<PluginState>((set, get) => ({
     try {
       const result = await api.scanPlugins()
       if (result?.success && Array.isArray(result.plugins)) {
-        const discovered: Plugin[] = result.plugins.map((p: any) => ({
+        const discovered: Plugin[] = result.plugins.map((p: ScannedPlugin) => ({
           id: p.id,
           name: p.name,
           description: p.description,

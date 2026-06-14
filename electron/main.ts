@@ -14,6 +14,7 @@ import { scanPluginDirectories } from './plugin-scanner'
 
 const DATA_DIR = app.getPath('userData')
 const DATA_FILE = path.join(DATA_DIR, 'sessions.json')
+const SETTINGS_FILE = path.join(DATA_DIR, 'settings.json')
 
 process.on('uncaughtException', (err) => {
   console.error('[Main] Uncaught exception:', err)
@@ -138,6 +139,32 @@ ipcMain.handle('save-data', (_, data: any) => {
     return true
   } catch (err) {
     console.error('[Main] save-data error:', err)
+    return false
+  }
+})
+
+ipcMain.handle('settings-get', () => {
+  try {
+    if (fs.existsSync(SETTINGS_FILE)) {
+      const raw = fs.readFileSync(SETTINGS_FILE, 'utf-8')
+      return JSON.parse(raw)
+    }
+  } catch (err) {
+    console.error('[Main] settings-get error:', err)
+  }
+  return null
+})
+
+ipcMain.handle('settings-set', (_, settings: Record<string, unknown>) => {
+  try {
+    if (!settings || typeof settings !== 'object') return false
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true })
+    }
+    fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2), 'utf-8')
+    return true
+  } catch (err) {
+    console.error('[Main] settings-set error:', err)
     return false
   }
 })

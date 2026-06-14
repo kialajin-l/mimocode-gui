@@ -7,14 +7,16 @@ interface SideStatusCardProps {
   project?: Project
 }
 
+const CONTEXT_LIMIT = 495_990
+const CHARS_PER_TOKEN = 3.6
+
 export function SideStatusCard({ session, project }: SideStatusCardProps) {
   const cwd = session?.cwd || project?.cwd || '未选择工作区'
   const changes = session?.changes || []
   const messageCount = session?.messages.length || 0
   const prefs = readInputPrefs()
-  const estimatedTokens = Math.max(0, session?.messages.reduce((sum, message) => sum + Math.ceil(message.content.length / 3.6), 0) || 0)
-  const contextLimit = 495_990
-  const contextUsed = Math.min(100, Math.round((estimatedTokens / contextLimit) * 100))
+  const estimatedTokens = Math.max(0, session?.messages.reduce((sum, message) => sum + Math.ceil(message.content.length / CHARS_PER_TOKEN), 0) || 0)
+  const contextUsed = Math.min(100, Math.round((estimatedTokens / CONTEXT_LIMIT) * 100))
   const tasks = buildTasks(messageCount, changes.length)
   const [mcpStatus, setMcpStatus] = useState<'connected' | 'disconnected'>('disconnected')
 
@@ -22,7 +24,7 @@ export function SideStatusCard({ session, project }: SideStatusCardProps) {
     const api = window.electronAPI
     if (!api) return
     api.getMimoPath().then(mimoPath => {
-      if (mimoPath) {
+      if (mimoPath && !mimoPath.includes('..') && /^[A-Za-z]:[\\/]/.test(mimoPath)) {
         api.readFile(`${mimoPath}/mcp.json`).then(result => {
           if (result?.success && result.content) {
             try {
@@ -48,7 +50,7 @@ export function SideStatusCard({ session, project }: SideStatusCardProps) {
 
       <div className="status-terminal-section">
         <h4>Context</h4>
-        <p>{contextLimit.toLocaleString()} tokens</p>
+        <p>{CONTEXT_LIMIT.toLocaleString()} tokens</p>
         <p>{contextUsed}% used (估算)</p>
         <p>{session?.status === 'running' ? '运行中' : session?.status === 'error' ? '异常' : '空闲'}</p>
         <p>{estimatedTokens.toLocaleString()} tokens 已使用 (估算)</p>

@@ -31,7 +31,7 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
   clearOutputLogs: () => set({ outputLogs: [] }),
 
   startServe: async (port?: number) => {
-    const api = (window as any).electronAPI
+    const api = window.electronAPI
     if (!api) return
 
     set({ serveStatus: 'starting' })
@@ -56,7 +56,7 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
   },
 
   stopServe: async () => {
-    const api = (window as any).electronAPI
+    const api = window.electronAPI
     if (!api) return
 
     // Clean up listener
@@ -70,7 +70,7 @@ export const useRuntimeStore = create<RuntimeState>((set, get) => ({
   },
 
   syncServeStatus: async () => {
-    const api = (window as any).electronAPI
+    const api = window.electronAPI
     if (!api) return
 
     const status = await api.getMimoServeStatus()

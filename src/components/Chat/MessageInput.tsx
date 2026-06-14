@@ -117,10 +117,9 @@ export function MessageInput({ onSend, onCancel, disabled, isRunning, onNewSessi
 
   const handleSend = () => {
     if (input.trim() && !disabled && !isRunning) {
-      const modeLabel = mode === 'compose' ? 'Compose' : mode === 'plan' ? 'Plan' : 'Build'
-      let message = `Mode: ${modeLabel}.\n\n${input.trim()}`
+      let message = `---\nmode: ${mode}\n---\n\n${input.trim()}`
       if (attachedFile) {
-        message = `附件: ${attachedFile}\n\n${message}`
+        message = `---\nfile: ${attachedFile}\n---\n\n${message}`
         setAttachedFile(null)
       }
       onSend(message, model, permission, reasoning)

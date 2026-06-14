@@ -121,4 +121,31 @@ describe('sessionStore', () => {
       expect(useSessionStore.getState().projects).toHaveLength(0)
     })
   })
+
+  describe('setActiveSession', () => {
+    it('sets the active session id', () => {
+      const session = useSessionStore.getState().createSession('Test', '/tmp')
+      useSessionStore.getState().setActiveSession(session.id)
+      expect(useSessionStore.getState().activeSessionId).toBe(session.id)
+    })
+  })
+
+  describe('deleteSession', () => {
+    it('removes a session', () => {
+      const session = useSessionStore.getState().createSession('Test', '/tmp')
+      useSessionStore.getState().deleteSession(session.id)
+      expect(useSessionStore.getState().sessions).toHaveLength(0)
+    })
+  })
+
+  describe('updateSession', () => {
+    it('updates session fields', () => {
+      const session = useSessionStore.getState().createSession('Test', '/tmp')
+      useSessionStore.getState().updateSession(session.id, { status: 'running', pid: 12345 })
+
+      const updated = useSessionStore.getState().sessions.find(s => s.id === session.id)
+      expect(updated?.status).toBe('running')
+      expect(updated?.pid).toBe(12345)
+    })
+  })
 })

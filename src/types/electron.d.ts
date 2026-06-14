@@ -42,6 +42,10 @@ interface ElectronAPI {
   loadData: () => Promise<any>
   saveData: (data: any) => Promise<boolean>
 
+  // Settings persistence
+  getSettings: () => Promise<Record<string, unknown> | null>
+  setSettings: (settings: Record<string, unknown>) => Promise<boolean>
+
   // Git
   gitDiff: (cwd?: string) => Promise<{ success: boolean; diff: string; error?: string }>
   gitDiffStat: (cwd?: string) => Promise<{ success: boolean; stat: string; error?: string }>

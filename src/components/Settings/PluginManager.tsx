@@ -145,7 +145,7 @@ function PluginCard({ plugin, onToggle, onRemove }: {
         <div className="plugin-card-path">{plugin.path}</div>
       </div>
       <div className="plugin-card-actions">
-        <button className="plugin-config-btn" type="button">配置</button>
+        <button className="plugin-config-btn" type="button" disabled title="暂未实现配置">配置</button>
         <label className="plugin-toggle">
           <input
             type="checkbox"

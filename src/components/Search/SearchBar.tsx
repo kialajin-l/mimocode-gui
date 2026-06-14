@@ -15,10 +15,19 @@ interface SearchBarProps {
   onClose: () => void
 }
 
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
 function highlightMatch(text: string, query: string): string {
-  if (!query) return text
-  const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  return text.replace(new RegExp(`(${escaped})`, 'gi'), '<mark>$1</mark>')
+  if (!query) return escapeHtml(text)
+  const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const safe = escapeHtml(text)
+  return safe.replace(new RegExp(`(${escapedQuery})`, 'gi'), '<mark>$1</mark>')
 }
 
 function truncate(text: string, maxLength: number): string {

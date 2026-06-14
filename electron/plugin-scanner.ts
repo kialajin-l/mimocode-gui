@@ -12,9 +12,8 @@ export interface ScannedPlugin {
 }
 
 const PLUGIN_DIRS = [
-  path.join(os.homedir(), '.codex', 'plugins'),
   path.join(os.homedir(), '.mimo', 'plugins'),
-  path.join(os.homedir(), '.local', 'share', 'codex', 'plugins'),
+  path.join(os.homedir(), '.local', 'share', 'mimo', 'plugins'),
 ]
 
 function readPluginManifest(dirPath: string): Record<string, any> | null {
@@ -50,7 +49,7 @@ function scanDirectory(dirPath: string): ScannedPlugin[] {
           description: manifest.description || '',
           path: pluginDir,
           source: dirPath,
-          enabled: true,
+          enabled: false,
         })
       }
     }

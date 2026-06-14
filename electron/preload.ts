@@ -84,6 +84,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   loadData: () => safeInvoke('load-data'),
   saveData: (data: any) => safeInvoke('save-data', data),
 
+  // Settings persistence
+  getSettings: () => safeInvoke('settings-get'),
+  setSettings: (settings: Record<string, unknown>) => safeInvoke('settings-set', settings),
+
   // Git operations
   gitDiff: (cwd?: string) => safeInvoke('git-diff', cwd),
   gitDiffStat: (cwd?: string) => safeInvoke('git-diff-stat', cwd),

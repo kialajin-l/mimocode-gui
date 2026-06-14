@@ -33,14 +33,15 @@ function App() {
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [shortcutHelpOpen, setShortcutHelpOpen] = useState(false)
-  const [workspaceView, setWorkspaceView] = useState<'workbench' | 'plugins' | 'settings' | 'automation'>('workbench')
+  type WorkspaceView = 'workbench' | 'plugins' | 'settings' | 'automation'
+  const [workspaceView, setWorkspaceView] = useState<WorkspaceView>('workbench')
   const navHistoryRef = useRef<string[]>([])
   const navIndexRef = useRef<number>(-1)
   const navSkipRef = useRef(false)
   const [canGoBack, setCanGoBack] = useState(false)
   const [canGoForward, setCanGoForward] = useState(false)
 
-  const navigateTo = useCallback((view: string) => {
+  const navigateTo = useCallback((view: WorkspaceView) => {
     if (navSkipRef.current) {
       navSkipRef.current = false
       return
@@ -49,7 +50,7 @@ function App() {
     history.push(view)
     navHistoryRef.current = history
     navIndexRef.current = history.length - 1
-    setWorkspaceView(view as any)
+    setWorkspaceView(view)
     setCanGoBack(navIndexRef.current > 0)
     setCanGoForward(false)
   }, [])
@@ -58,7 +59,7 @@ function App() {
     if (navIndexRef.current > 0) {
       navIndexRef.current -= 1
       navSkipRef.current = true
-      setWorkspaceView(navHistoryRef.current[navIndexRef.current] as any)
+      setWorkspaceView(navHistoryRef.current[navIndexRef.current] as WorkspaceView)
       setCanGoBack(navIndexRef.current > 0)
       setCanGoForward(navIndexRef.current < navHistoryRef.current.length - 1)
     }
@@ -68,7 +69,7 @@ function App() {
     if (navIndexRef.current < navHistoryRef.current.length - 1) {
       navIndexRef.current += 1
       navSkipRef.current = true
-      setWorkspaceView(navHistoryRef.current[navIndexRef.current] as any)
+      setWorkspaceView(navHistoryRef.current[navIndexRef.current] as WorkspaceView)
       setCanGoBack(navIndexRef.current > 0)
       setCanGoForward(navIndexRef.current < navHistoryRef.current.length - 1)
     }
