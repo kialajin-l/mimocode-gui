@@ -31,11 +31,11 @@ function saveToLocalStorage(key: string, value: unknown) {
 async function loadAllSettings(): Promise<Record<string, unknown> | null> {
   if (typeof window === 'undefined') return null
   try {
-    const api = (window as any).electronAPI
+    const api = window.electronAPI
     if (api?.getSettings) {
       const result = await api.getSettings()
       if (result?.success && result.settings) {
-        return result.settings
+        return result.settings as Record<string, unknown>
       }
     }
   } catch (err) {
@@ -47,7 +47,7 @@ async function loadAllSettings(): Promise<Record<string, unknown> | null> {
 async function saveAllSettings(settings: Record<string, unknown>) {
   if (typeof window === 'undefined') return
   try {
-    const api = (window as any).electronAPI
+    const api = window.electronAPI
     if (api?.setSettings) {
       await api.setSettings(settings)
     }

@@ -8,7 +8,7 @@ interface MessageChunk {
 
 interface ElectronAPI {
   // Chat
-  sendMessage: (sessionId: string, message: string, cwd?: string, model?: string, permission?: string, variant?: string, requestId?: string) => Promise<{
+  sendMessage: (sessionId: string, message: string, cwd?: string, model?: string, permission?: string, variant?: string, mode?: string) => Promise<{
     success: boolean
     content?: string
     error?: string
