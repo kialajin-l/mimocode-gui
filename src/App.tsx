@@ -21,12 +21,15 @@ import { useThemeStore } from './stores/themeStore'
 import { parseDiff } from './utils/diffParser'
 import { exportSessionToMarkdown, sessionToFilename } from './utils/exportSession'
 import { parseMarkdownToSession } from './utils/importSession'
+import { SIDEBAR_WIDTH_KEY, clampSidebarWidth, readSidebarWidth } from './utils/sidebarLayout'
 import { ConfirmDialog, ConfirmDialogProps } from './components/Security/ConfirmDialog'
 import './App.css'
 
 function App() {
   const { activeSession, sendMessage, cancelMessage, updateSession } = useSession()
   const loadData = useSessionStore(s => s.loadData)
+  const loadError = useSessionStore(s => s.loadError)
+  const retryLoadData = useSessionStore(s => s.retryLoadData)
   const sessions = useSessionStore(s => s.sessions)
   const projects = useSessionStore(s => s.projects)
   const [panelOpen, setPanelOpen] = useState(false)
@@ -40,6 +43,8 @@ function App() {
   const navSkipRef = useRef(false)
   const [canGoBack, setCanGoBack] = useState(false)
   const [canGoForward, setCanGoForward] = useState(false)
+  const [sidebarWidth, setSidebarWidth] = useState(readSidebarWidth)
+  const [resizingSidebar, setResizingSidebar] = useState(false)
 
   const navigateTo = useCallback((view: WorkspaceView) => {
     if (navSkipRef.current) {
@@ -83,6 +88,32 @@ function App() {
   useKeyboardShortcuts()
 
   useEffect(() => {
+    if (!resizingSidebar) return
+
+    const handlePointerMove = (event: PointerEvent) => {
+      setSidebarWidth(clampSidebarWidth(event.clientX))
+    }
+
+    const handlePointerUp = () => {
+      setResizingSidebar(false)
+    }
+
+    document.body.classList.add('sidebar-resizing')
+    window.addEventListener('pointermove', handlePointerMove)
+    window.addEventListener('pointerup', handlePointerUp)
+
+    return () => {
+      document.body.classList.remove('sidebar-resizing')
+      window.removeEventListener('pointermove', handlePointerMove)
+      window.removeEventListener('pointerup', handlePointerUp)
+    }
+  }, [resizingSidebar])
+
+  useEffect(() => {
+    window.localStorage.setItem(SIDEBAR_WIDTH_KEY, String(sidebarWidth))
+  }, [sidebarWidth])
+
+  useEffect(() => {
     if (!openMenu) return
     const handleClick = (e: MouseEvent) => {
       if (menuBarRef.current && !menuBarRef.current.contains(e.target as Node)) {
@@ -92,6 +123,20 @@ function App() {
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
   }, [openMenu])
+
+  // Esc to exit non-workbench views (settings/plugins/automation)
+  useEffect(() => {
+    if (workspaceView === 'workbench') return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        e.stopPropagation()
+        navigateTo('workbench')
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown, true)
+    return () => window.removeEventListener('keydown', handleKeyDown, true)
+  }, [workspaceView, navigateTo])
 
   const activeProject = activeSession?.projectId
     ? projects.find(project => project.id === activeSession.projectId)
@@ -126,8 +171,10 @@ function App() {
     if (!searchQuery.trim()) return []
     const query = searchQuery.toLowerCase()
     return sessions.filter(s =>
-      s.name.toLowerCase().includes(query) ||
-      s.messages.some(m => m.content.toLowerCase().includes(query))
+      !s.archived && (
+        s.name.toLowerCase().includes(query) ||
+        s.messages.some(m => m.content.toLowerCase().includes(query))
+      )
     ).flatMap(s => {
       const matchingMessages = s.messages.filter(m =>
         m.content.toLowerCase().includes(query)
@@ -221,18 +268,43 @@ function App() {
     loadData()
   }, [])
 
+  // Validate URL sessionId after data is loaded
+  const [urlSessionWarning, setUrlSessionWarning] = useState('')
   useEffect(() => {
+    if (!loadData || !useSessionStore.getState().loaded) return
     const params = new URLSearchParams(window.location.search)
     const sessionId = params.get('sessionId')
     if (sessionId) {
-      const selectSession = useSessionStore.getState().setActiveSession
-      selectSession(sessionId)
+      const sessionExists = useSessionStore.getState().sessions.some(s => s.id === sessionId)
+      if (sessionExists) {
+        useSessionStore.getState().setActiveSession(sessionId)
+      } else {
+        setUrlSessionWarning('会话不存在或已被删除')
+        // Clean URL parameter
+        const url = new URL(window.location.href)
+        url.searchParams.delete('sessionId')
+        window.history.replaceState({}, '', url.toString())
+        // Auto-dismiss after 3 seconds
+        window.setTimeout(() => setUrlSessionWarning(''), 3000)
+      }
     }
-  }, [])
+  }, [sessions])
 
-  return (
+    return (
     <ErrorBoundary>
       <div className="app">
+        {loadError && (
+          <div className="load-error-banner" style={{ background: 'var(--error-bg, #fee)', color: 'var(--error-color, #c00)', padding: '8px 16px', textAlign: 'center', fontSize: 13 }}>
+            {loadError}
+            <button onClick={retryLoadData} style={{ marginLeft: 12, padding: '2px 8px', cursor: 'pointer' }}>重试</button>
+          </div>
+        )}
+        {urlSessionWarning && (
+          <div style={{ position: 'fixed', top: 40, left: '50%', transform: 'translateX(-50%)', background: 'var(--error-bg, #fee)', color: 'var(--error-color, #c00)', padding: '8px 20px', borderRadius: 8, fontSize: 13, zIndex: 9999, boxShadow: '0 4px 12px rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', gap: 8 }}>
+            {urlSessionWarning}
+            <button onClick={() => setUrlSessionWarning('')} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: 16, lineHeight: 1 }}>×</button>
+          </div>
+        )}
         {confirmDialog && (
           <ConfirmDialog
             {...confirmDialog}
@@ -244,6 +316,7 @@ function App() {
             query={searchQuery}
             results={searchResults}
             onQueryChange={setSearchQuery}
+            onNavigateToSession={() => navigateTo('workbench')}
             onClose={() => {
               setSearchOpen(false)
               setSearchQuery('')
@@ -371,7 +444,7 @@ function App() {
         </div>
 
         <div className="app-body">
-          <aside className="sidebar">
+          <aside className="sidebar" style={{ width: sidebarWidth, minWidth: sidebarWidth }}>
             <div className="sidebar-nav-row">
               <button className="nav-btn" title="返回" onClick={goBack} disabled={!canGoBack}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
@@ -408,7 +481,7 @@ function App() {
                 {t('sidebar.automation')}
               </button>
 
-              <SessionList />
+              <SessionList onSelectSession={() => navigateTo('workbench')} />
             </div>
 
             <div className="sidebar-bottom">
@@ -420,6 +493,16 @@ function App() {
                 {t('sidebar.settings')}
               </button>
             </div>
+            <button
+              type="button"
+              className="sidebar-resize-handle"
+              aria-label="调整侧边栏宽度"
+              title="拖动调整侧边栏宽度"
+              onPointerDown={(event) => {
+                event.preventDefault()
+                setResizingSidebar(true)
+              }}
+            />
           </aside>
 
           <main className="main-content">
@@ -478,7 +561,7 @@ function App() {
               ) : workspaceView === 'settings' ? (
                 <SettingsPage onClose={() => navigateTo('workbench')} />
               ) : workspaceView === 'automation' ? (
-                <WorkflowPanel onSendMessage={sendMessage} />
+                <WorkflowPanel onSendMessage={sendMessage} onClose={() => navigateTo('workbench')} />
               ) : activeSession ? (
                 <MessageList
                   messages={activeSession.messages}
@@ -518,11 +601,16 @@ function App() {
                   onOpenPlugins={() => navigateTo('plugins')}
                   onOpenWorkflow={() => navigateTo('automation')}
                   onToggleStatus={() => useSettingsStore.getState().setShowStatusCard(!useSettingsStore.getState().showStatusCard)}
+                  onClearSession={() => {
+                    if (activeSession) {
+                      useSessionStore.getState().updateSession(activeSession.id, { messages: [] })
+                    }
+                  }}
                 />
               </div>
             </div>
             )}
-            {showStatusCard && <SideStatusCard session={activeSession} project={activeProject} />}
+            {showStatusCard && workspaceView === 'workbench' && <SideStatusCard session={activeSession} project={activeProject} />}
           </main>
 
           <RightPanel

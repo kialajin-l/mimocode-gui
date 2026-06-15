@@ -1,17 +1,33 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useSession } from '../../hooks/useSession'
 import { ProjectNode } from './ProjectNode'
 
-export function SessionList() {
+export function SessionList({ onSelectSession }: { onSelectSession?: () => void }) {
   const {
     sessions, projects, activeSessionId, createSession, deleteSession,
-    setActiveSession, createProject, updateSession
+    setActiveSession, createProject, archiveProject, deleteProject, updateSession, archiveSession
   } = useSession()
   const [showNewProject, setShowNewProject] = useState(false)
   const [newProjectName, setNewProjectName] = useState('')
   const [projectMenuOpen, setProjectMenuOpen] = useState(false)
   const [projectError, setProjectError] = useState('')
-  const [expandedProjectIds, setExpandedProjectIds] = useState<string[]>([])
+  const [expandedProjectIds, setExpandedProjectIds] = useState<string[]>(() =>
+    projects.map(p => p.id)
+  )
+
+  // 默认展开所有项目（当项目列表变化时）
+  useEffect(() => {
+    setExpandedProjectIds(prev => {
+      const allIds = projects.map(p => p.id)
+      const newIds = allIds.filter(id => !prev.includes(id))
+      return newIds.length > 0 ? [...prev, ...newIds] : prev
+    })
+  }, [projects])
+
+  const selectAndNavigate = (id: string) => {
+    setActiveSession(id)
+    onSelectSession?.()
+  }
 
   const toggleProject = (id: string) => {
     setExpandedProjectIds(prev =>
@@ -73,7 +89,7 @@ export function SessionList() {
     }
   }
 
-  const ungroupedSessions = sessions.filter(s => !s.projectId)
+  const ungroupedSessions = sessions.filter(s => !s.projectId && !s.archived)
 
   return (
     <div className="session-list">
@@ -126,21 +142,29 @@ export function SessionList() {
       )}
 
       <div className="session-list-items">
-        {projects.map(project => (
-          <ProjectNode
-            key={project.id}
-            project={project}
-            sessions={sessions.filter(s => s.projectId === project.id)}
-            activeSessionId={activeSessionId}
-            expanded={expandedProjectIds.includes(project.id)}
-            onToggle={() => toggleProject(project.id)}
-            onSelectSession={setActiveSession}
-            onDeleteSession={deleteSession}
-            onRenameSession={handleRenameSession}
-            onOpenInNewWindow={handleOpenInNewWindow}
-            onNewSession={handleNewSessionInProject}
-          />
-        ))}
+        {projects.map(project => {
+          const projectSessions = sessions.filter(s => s.projectId === project.id && !s.archived)
+          const archivedCount = sessions.filter(s => s.projectId === project.id && s.archived).length
+          return (
+            <ProjectNode
+              key={project.id}
+              project={project}
+              sessions={projectSessions}
+              archivedCount={archivedCount}
+              activeSessionId={activeSessionId}
+              expanded={expandedProjectIds.includes(project.id)}
+              onToggle={() => toggleProject(project.id)}
+              onSelectSession={selectAndNavigate}
+              onDeleteSession={deleteSession}
+              onArchiveSession={archiveSession}
+              onRenameSession={handleRenameSession}
+              onOpenInNewWindow={handleOpenInNewWindow}
+              onNewSession={handleNewSessionInProject}
+              onArchiveProject={archiveProject}
+              onDeleteProject={deleteProject}
+            />
+          )
+        })}
 
         {ungroupedSessions.length > 0 && (
           <div className="session-list-ungrouped">
@@ -149,7 +173,7 @@ export function SessionList() {
               <div
                 key={session.id}
                 className={`session-item ${session.id === activeSessionId ? 'active' : ''}`}
-                onClick={() => setActiveSession(session.id)}
+                onClick={() => selectAndNavigate(session.id)}
               >
                 <span className="session-title">{session.name}</span>
               </div>

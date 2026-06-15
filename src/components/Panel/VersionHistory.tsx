@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useSessionStore } from '../../stores/sessionStore'
 import { useInspectorStore } from '../../stores/inspectorStore'
 
@@ -10,12 +10,25 @@ type SubTab = 'local' | 'native'
 
 export function VersionHistory({ sessionId }: VersionHistoryProps) {
   const session = useSessionStore(s => s.sessions.find(sess => sess.id === sessionId))
+  const allSessions = useSessionStore(s => s.sessions)
+  const localVersions = useMemo(() => {
+    const current = allSessions.find(sess => sess.id === sessionId)
+    const projectId = current?.projectId
+    const sourceSessions = projectId
+      ? allSessions.filter(sess => sess.projectId === projectId)
+      : current ? [current] : []
+    return sourceSessions.flatMap(source => (source.versions || []).map(version => ({
+      ...version,
+      sessionId: source.id,
+      sessionName: source.name,
+    })))
+  }, [allSessions, sessionId])
   const [showLabelInput, setShowLabelInput] = useState(false)
   const [label, setLabel] = useState('')
   const [activeTab, setActiveTab] = useState<SubTab>('local')
 
   if (!session) return null
-  const versions = session.versions || []
+  const versions = localVersions
 
   const handleSaveVersion = () => {
     const store = useSessionStore.getState()
@@ -26,7 +39,13 @@ export function VersionHistory({ sessionId }: VersionHistoryProps) {
       id: crypto.randomUUID(),
       timestamp: new Date(),
       messages: [...(sessionData.messages || [])],
-      label: label.trim() || `会话版本 ${(sessionData.versions || []).length + 1}`
+      label: label.trim() || `会话版本 ${(sessionData.versions || []).length + 1}`,
+      snapshot: {
+        changes: [...(sessionData.changes || [])],
+        tags: [...(sessionData.tags || [])],
+        cwd: sessionData.cwd,
+        status: sessionData.status,
+      }
     }
 
     store.updateSession(sessionId, {
@@ -37,17 +56,8 @@ export function VersionHistory({ sessionId }: VersionHistoryProps) {
     setShowLabelInput(false)
   }
 
-  const handleRestoreVersion = (versionId: string) => {
-    const store = useSessionStore.getState()
-    const sessionData = store.sessions.find(s => s.id === sessionId)
-    if (!sessionData) return
-
-    const version = (sessionData.versions || []).find(v => v.id === versionId)
-    if (!version) return
-
-    store.updateSession(sessionId, {
-      messages: [...version.messages]
-    })
+  const handleRestoreVersion = (versionId: string, targetSessionId?: string) => {
+    useSessionStore.getState().restoreVersion(targetSessionId || sessionId, versionId)
   }
 
   return (
@@ -99,7 +109,7 @@ function LocalVersions({
   label: string
   setLabel: (v: string) => void
   onSave: () => void
-  onRestore: (id: string) => void
+  onRestore: (id: string, sessionId?: string) => void
 }) {
   return (
     <>
@@ -130,17 +140,17 @@ function LocalVersions({
         {versions.length === 0 ? (
           <div className="version-empty">暂无保存的会话版本</div>
         ) : (
-          [...versions].reverse().map(version => (
+          [...versions].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()).map(version => (
             <div key={version.id} className="version-item">
               <div className="version-info">
                 <div className="version-label">{version.label}</div>
                 <div className="version-meta">
-                  {version.timestamp.toLocaleString()} · {version.messages.length} 条消息
+                  {version.sessionName ? `${version.sessionName} · ` : ''}{version.timestamp.toLocaleString()} · {version.messages.length} 条消息
                 </div>
               </div>
               <button
                 className="version-restore-btn"
-                onClick={() => onRestore(version.id)}
+                onClick={() => onRestore(version.id, version.sessionId)}
               >
                 恢复
               </button>

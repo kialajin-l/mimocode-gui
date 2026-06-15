@@ -81,7 +81,8 @@ describe('sessionStore', () => {
         updatedAt: '2026-06-13T00:00:00.000Z'
       }
       ;(window as any).electronAPI = {
-        loadData: vi.fn().mockResolvedValue({ sessions: [legacySession], projects: [], activeSessionId: 'legacy-1' })
+        loadData: vi.fn().mockResolvedValue({ sessions: [legacySession], projects: [], activeSessionId: 'legacy-1' }),
+        syncWorkspaces: vi.fn().mockResolvedValue({ success: true }),
       }
 
       await useSessionStore.getState().loadData()
@@ -135,6 +136,74 @@ describe('sessionStore', () => {
       const session = useSessionStore.getState().createSession('Test', '/tmp')
       useSessionStore.getState().deleteSession(session.id)
       expect(useSessionStore.getState().sessions).toHaveLength(0)
+    })
+  })
+
+  describe('archiveProject', () => {
+    it('archives all project sessions and removes the project from the sidebar', () => {
+      const project = useSessionStore.getState().createProject('Project', '/repo')
+      const session = useSessionStore.getState().createSession('Session 1', '/repo', project.id)
+      useSessionStore.getState().addMessage(session.id, {
+        id: 'm1',
+        role: 'user' as const,
+        content: 'project archive content',
+        timestamp: new Date()
+      })
+
+      useSessionStore.getState().archiveProject(project.id)
+
+      const archived = useSessionStore.getState().sessions.find(s => s.id === session.id)
+      expect(useSessionStore.getState().projects).toHaveLength(0)
+      expect(archived?.archived).toBe(true)
+      expect(archived?.versions[0].messages[0].content).toBe('project archive content')
+      expect(useSessionStore.getState().activeSessionId).toBeNull()
+    })
+  })
+
+  describe('archiveSession', () => {
+    it('archives a session into local versions before hiding it', () => {
+      const session = useSessionStore.getState().createSession('Test', '/tmp')
+      const msg = { id: 'm1', role: 'user' as const, content: 'important context', timestamp: new Date() }
+      useSessionStore.getState().addMessage(session.id, msg)
+
+      useSessionStore.getState().archiveSession(session.id)
+
+      const archived = useSessionStore.getState().sessions.find(s => s.id === session.id)
+      expect(archived?.archived).toBe(true)
+      expect(archived?.versions).toHaveLength(1)
+      expect(archived?.versions[0].label).toContain('归档')
+      expect(archived?.versions[0].messages[0].content).toBe('important context')
+    })
+
+    it('clears active session when archiving the active session', () => {
+      const session = useSessionStore.getState().createSession('Test', '/tmp')
+
+      useSessionStore.getState().archiveSession(session.id)
+
+      expect(useSessionStore.getState().activeSessionId).toBeNull()
+    })
+  })
+
+  describe('restoreVersion', () => {
+    it('restores messages and makes archived sessions visible again', () => {
+      const session = useSessionStore.getState().createSession('Test', '/tmp')
+      useSessionStore.getState().addMessage(session.id, {
+        id: 'm1',
+        role: 'user' as const,
+        content: 'before archive',
+        timestamp: new Date()
+      })
+      useSessionStore.getState().archiveSession(session.id)
+      const versionId = useSessionStore.getState().sessions.find(s => s.id === session.id)?.versions[0].id
+
+      useSessionStore.getState().updateSession(session.id, { messages: [] })
+      useSessionStore.getState().restoreVersion(session.id, versionId!)
+
+      const restored = useSessionStore.getState().sessions.find(s => s.id === session.id)
+      expect(restored?.archived).toBe(false)
+      expect(restored?.messages[0].content).toBe('before archive')
+      expect(restored?.versions.find(version => version.id === versionId)).toBeUndefined()
+      expect(useSessionStore.getState().activeSessionId).toBe(session.id)
     })
   })
 

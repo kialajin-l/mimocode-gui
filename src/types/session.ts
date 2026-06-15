@@ -7,6 +7,7 @@ export interface Message {
   timestamp: Date
   bookmarked?: boolean
   parts?: MessagePart[]
+  mode?: 'compose' | 'plan' | 'build'
 }
 
 export interface MessagePart {
@@ -33,6 +34,12 @@ export interface SessionVersion {
   timestamp: Date
   messages: Message[]
   label: string
+  snapshot?: {
+    changes?: FileChange[]
+    tags?: string[]
+    cwd?: string
+    status?: Session['status']
+  }
 }
 
 export interface Session {
@@ -46,6 +53,8 @@ export interface Session {
   projectId: string | null
   changes: FileChange[]
   tags: string[]
+  archived?: boolean
+  archivedAt?: Date
   createdAt: Date
   updatedAt: Date
 }

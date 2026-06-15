@@ -24,7 +24,7 @@ interface ElectronAPI {
     error?: string
   }>
   terminalKill: (id: string) => Promise<boolean>
-  onTerminalOutput: (id: string, callback: (data: string) => void) => void
+  onTerminalOutput: (id: string, callback: (data: string) => void) => (() => void)
   onTerminalExit: (id: string, callback: (code: number | null) => void) => (() => void)
   removeTerminalListeners: (id: string) => void
 
@@ -39,8 +39,17 @@ interface ElectronAPI {
   // Data
   getMimoPath: () => Promise<string>
   listModels: () => Promise<{ success: boolean; models: string[]; error?: string }>
+  listCliProviders: () => Promise<{
+    success: boolean
+    providers: { id: string; label: string; source: string; baseUrl?: string; models: string[] }[]
+    error?: string
+  }>
+  cliHealth: () => Promise<{ healthy: boolean; path: string; error?: string }>
   loadData: () => Promise<any>
   saveData: (data: any) => Promise<boolean>
+  skillsLoad: () => Promise<any[]>
+  skillsSave: (skills: any[]) => Promise<boolean>
+  fetchProviderModels: (baseUrl: string, apiKey?: string, providerId?: string) => Promise<{ success: boolean; models: string[]; error?: string }>
 
   // Settings persistence
   getSettings: () => Promise<Record<string, unknown> | null>
@@ -92,6 +101,37 @@ interface ElectronAPI {
   }>
   installPlugin: (module: string) => Promise<{ success: boolean; output?: string; error?: string }>
 
+  // Skills
+  scanSkills: () => Promise<{
+    success: boolean
+    skills: { id: string; name: string; description: string; path: string; source: string; enabled: boolean }[]
+    error?: string
+  }>
+  installSkill: (module: string) => Promise<{ success: boolean; output?: string; error?: string }>
+
+  // MCP
+  mcpList: () => Promise<{
+    success: boolean
+    servers: { id: string; name: string; command: string; args: string[]; env?: Record<string, string>; enabled: boolean; source?: 'gui' | 'claude'; readonly?: boolean }[]
+    error?: string
+  }>
+  mcpAdd: (server: { name: string; command: string; args: string[]; env?: Record<string, string>; enabled: boolean }) => Promise<{
+    success: boolean
+    server?: { id: string; name: string; command: string; args: string[]; env?: Record<string, string>; enabled: boolean; source?: 'gui' | 'claude'; readonly?: boolean }
+    error?: string
+  }>
+  mcpUpdate: (id: string, updates: Record<string, unknown>) => Promise<{
+    success: boolean
+    server?: { id: string; name: string; command: string; args: string[]; env?: Record<string, string>; enabled: boolean; source?: 'gui' | 'claude'; readonly?: boolean }
+    error?: string
+  }>
+  mcpRemove: (id: string) => Promise<{ success: boolean; error?: string }>
+  mcpToggle: (id: string) => Promise<{
+    success: boolean
+    server?: { id: string; name: string; command: string; args: string[]; env?: Record<string, string>; enabled: boolean; source?: 'gui' | 'claude'; readonly?: boolean }
+    error?: string
+  }>
+
   // Inspector / data adapters
   fetchSessions: () => Promise<{ success: boolean; sessions: any[]; error?: string }>
   exportSessionData: (sessionId: string) => Promise<{ success: boolean; data: any; error?: string }>
@@ -101,6 +141,12 @@ interface ElectronAPI {
     checkpoints: { name: string; path: string; content: string; mtime: number }[]
     error?: string
   }>
+  syncWorkspaces: (cwds: string[]) => Promise<{ success: boolean }>
+
+  // API Key secure storage
+  apiKeySave: (providerId: string, apiKey: string) => Promise<{ success: boolean; error?: string }>
+  apiKeyGetStatus: (providerId: string) => Promise<{ configured: boolean; masked?: string; error?: string }>
+  apiKeyDelete: (providerId: string) => Promise<{ success: boolean; error?: string }>
 }
 
 declare global {

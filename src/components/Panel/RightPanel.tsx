@@ -5,6 +5,8 @@ import { VersionHistory } from './VersionHistory'
 import { BookmarksPanel } from './BookmarksPanel'
 import { InspectorPanel } from '../Inspector/InspectorPanel'
 import { useInspectorStore } from '../../stores/inspectorStore'
+import { useSessionStore } from '../../stores/sessionStore'
+import { getProjectVersionSessionId } from '../../utils/projectVersions'
 
 interface RightPanelProps {
   open: boolean
@@ -19,6 +21,9 @@ type CodeTab = 'review' | 'terminal' | 'versions' | 'bookmarks' | 'inspector'
 export function RightPanel({ open, changes, sessionId, onAcceptChange, onRejectChange }: RightPanelProps) {
   const [codeTab, setCodeTab] = useState<CodeTab>('review')
   const { fetchSessions } = useInspectorStore()
+  const fallbackVersionSessionId = useSessionStore(s => getProjectVersionSessionId(s.sessions, sessionId))
+  const hasSessionContext = Boolean(sessionId)
+  const versionSessionId = sessionId || fallbackVersionSessionId
 
   useEffect(() => {
     if (open && codeTab === 'inspector') {
@@ -41,7 +46,7 @@ export function RightPanel({ open, changes, sessionId, onAcceptChange, onRejectC
         >
           终端
         </button>
-        {sessionId && (
+        {hasSessionContext && (
           <>
             <button
               className={`panel-tab ${codeTab === 'inspector' ? 'active' : ''}`}
@@ -49,12 +54,20 @@ export function RightPanel({ open, changes, sessionId, onAcceptChange, onRejectC
             >
               检查器
             </button>
+          </>
+        )}
+        {versionSessionId && (
+          <>
             <button
               className={`panel-tab ${codeTab === 'versions' ? 'active' : ''}`}
               onClick={() => setCodeTab('versions')}
             >
               会话版本
             </button>
+          </>
+        )}
+        {hasSessionContext && (
+          <>
             <button
               className={`panel-tab ${codeTab === 'bookmarks' ? 'active' : ''}`}
               onClick={() => setCodeTab('bookmarks')}
@@ -75,8 +88,13 @@ export function RightPanel({ open, changes, sessionId, onAcceptChange, onRejectC
         )}
         {codeTab === 'terminal' && <TerminalPanel />}
         {codeTab === 'inspector' && sessionId && <InspectorPanel />}
-        {codeTab === 'versions' && sessionId && (
-          <VersionHistory sessionId={sessionId} />
+        {codeTab === 'versions' && versionSessionId && (
+          <VersionHistory sessionId={versionSessionId} />
+        )}
+        {codeTab === 'versions' && !versionSessionId && (
+          <div className="version-empty">
+            {hasSessionContext ? '当前项目暂无会话版本' : '请先选择一个项目'}
+          </div>
         )}
         {codeTab === 'bookmarks' && sessionId && (
           <BookmarksPanel sessionId={sessionId} />
@@ -106,7 +124,7 @@ function TerminalPanel() {
 
     const id = idRef.current
 
-    api.onTerminalOutput(id, (data) => {
+    const cleanupOutput = api.onTerminalOutput(id, (data) => {
       setLines(prev => [...prev, { type: 'output', content: data }])
     })
 
@@ -118,8 +136,9 @@ function TerminalPanel() {
     })
 
     return () => {
+      cleanupOutput()
       cleanupExit()
-      api.removeTerminalListeners(id)
+      api.terminalKill(id)
     }
   }, [])
 

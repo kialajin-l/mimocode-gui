@@ -3,11 +3,80 @@ import { contextBridge, ipcRenderer } from 'electron'
 const chunkListeners = new Map<string, (...args: any[]) => void>()
 const terminalListeners = new Map<string, (...args: any[]) => void>()
 
+const ALLOWED_CHANNELS = new Set([
+  'send-message',
+  'cancel-message',
+  'terminal-execute',
+  'terminal-kill',
+  'save-file',
+  'get-mimo-path',
+  'list-models',
+  'list-cli-providers',
+  'cli-health',
+  'load-data',
+  'save-data',
+  'skills-load',
+  'skills-save',
+  'fetch-provider-models',
+  'settings-get',
+  'settings-set',
+  'git-diff',
+  'git-diff-stat',
+  'git-file-diff',
+  'git-accept',
+  'git-reject',
+  'open-session-window',
+  'read-file',
+  'open-file',
+  'open-directory',
+  'dialog-open-directory',
+  'window-minimize',
+  'window-toggle-maximize',
+  'window-close',
+  'mimo-serve-start',
+  'mimo-serve-stop',
+  'mimo-serve-status',
+  'plugin-list-scan',
+  'plugin-install',
+  'skill-list-scan',
+  'skill-install',
+  'mcp-list',
+  'mcp-add',
+  'mcp-update',
+  'mcp-remove',
+  'mcp-toggle',
+  'fetch-sessions',
+  'export-session-data',
+  'read-project-context',
+  'sync-workspaces',
+  'api-key-save',
+  'api-key-get-status',
+  'api-key-delete',
+])
+
 function safeInvoke(channel: string, ...args: any[]): Promise<any> {
+  if (!ALLOWED_CHANNELS.has(channel)) {
+    console.warn(`[Preload] Blocked unknown IPC channel: ${channel}`)
+    return Promise.resolve({ success: false, error: `Blocked unknown channel: ${channel}` })
+  }
   return ipcRenderer.invoke(channel, ...args).catch((err) => {
     console.error(`[Preload] IPC error on ${channel}:`, err)
     return { success: false, error: String(err) }
   })
+}
+
+const ALLOWED_RECEIVE_CHANNELS = new Set([
+  'message-chunk',
+  'terminal-output',
+  'mimo-serve-output',
+])
+
+function safeOn(channel: string, listener: (...args: any[]) => void) {
+  if (!ALLOWED_RECEIVE_CHANNELS.has(channel) && !channel.startsWith('terminal-exit-')) {
+    console.warn(`[Preload] Blocked unknown receive channel: ${channel}`)
+    return
+  }
+  ipcRenderer.on(channel, listener)
 }
 
 contextBridge.exposeInMainWorld('electronAPI', {
@@ -27,7 +96,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       if (sid === sessionId) callback(chunk)
     }
     chunkListeners.set(sessionId, listener)
-    ipcRenderer.on('message-chunk', listener)
+    safeOn('message-chunk', listener)
   },
 
   removeMessageChunkListener: (sessionId: string) => {
@@ -54,7 +123,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
       if (tid === id) callback(data)
     }
     terminalListeners.set(id, listener)
-    ipcRenderer.on('terminal-output', listener)
+    safeOn('terminal-output', listener)
+    return () => {
+      ipcRenderer.removeListener('terminal-output', listener)
+      terminalListeners.delete(id)
+    }
   },
 
   onTerminalExit: (id: string, callback: (code: number | null) => void) => {
@@ -62,7 +135,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     const listener = (_: any, tid: string, code: number | null) => {
       if (tid === id) callback(code)
     }
-    ipcRenderer.on(channel, listener)
+    safeOn(channel, listener)
     return () => ipcRenderer.removeListener(channel, listener)
   },
 
@@ -81,8 +154,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Data persistence
   getMimoPath: () => safeInvoke('get-mimo-path'),
   listModels: () => safeInvoke('list-models'),
+  listCliProviders: () => safeInvoke('list-cli-providers'),
+  cliHealth: () => safeInvoke('cli-health'),
   loadData: () => safeInvoke('load-data'),
   saveData: (data: any) => safeInvoke('save-data', data),
+  skillsLoad: () => safeInvoke('skills-load'),
+  skillsSave: (skills: any[]) => safeInvoke('skills-save', skills),
+  fetchProviderModels: (baseUrl: string, apiKey?: string, providerId?: string) => safeInvoke('fetch-provider-models', baseUrl, apiKey, providerId),
 
   // Settings persistence
   getSettings: () => safeInvoke('settings-get'),
@@ -120,7 +198,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     const listener = (_: any, data: { type: string; content: string }) => {
       callback(data)
     }
-    ipcRenderer.on('mimo-serve-output', listener)
+    safeOn('mimo-serve-output', listener)
     return () => ipcRenderer.removeListener('mimo-serve-output', listener)
   },
 
@@ -128,8 +206,26 @@ contextBridge.exposeInMainWorld('electronAPI', {
   scanPlugins: () => safeInvoke('plugin-list-scan'),
   installPlugin: (module: string) => safeInvoke('plugin-install', module),
 
+  // Skills
+  scanSkills: () => safeInvoke('skill-list-scan'),
+  installSkill: (module: string) => safeInvoke('skill-install', module),
+
+  // MCP
+  mcpList: () => safeInvoke('mcp-list'),
+  mcpAdd: (server: { name: string; command: string; args: string[]; env?: Record<string, string>; enabled: boolean }) =>
+    safeInvoke('mcp-add', server),
+  mcpUpdate: (id: string, updates: Record<string, unknown>) => safeInvoke('mcp-update', id, updates),
+  mcpRemove: (id: string) => safeInvoke('mcp-remove', id),
+  mcpToggle: (id: string) => safeInvoke('mcp-toggle', id),
+
   // Inspector / data adapters
   fetchSessions: () => safeInvoke('fetch-sessions'),
   exportSessionData: (sessionId: string) => safeInvoke('export-session-data', sessionId),
-  readProjectContext: (projectDir: string) => safeInvoke('read-project-context', projectDir)
+  readProjectContext: (projectDir: string) => safeInvoke('read-project-context', projectDir),
+  syncWorkspaces: (cwds: string[]) => safeInvoke('sync-workspaces', cwds),
+
+  // API Key secure storage
+  apiKeySave: (providerId: string, apiKey: string) => safeInvoke('api-key-save', providerId, apiKey),
+  apiKeyGetStatus: (providerId: string) => safeInvoke('api-key-get-status', providerId),
+  apiKeyDelete: (providerId: string) => safeInvoke('api-key-delete', providerId),
 })

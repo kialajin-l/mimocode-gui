@@ -1,5 +1,7 @@
-import { useEffect, useState, KeyboardEvent } from 'react'
+import { useEffect, useLayoutEffect, useState, KeyboardEvent, useRef } from 'react'
 import { SlashCommandMenu, SlashCommand } from './SlashCommandMenu'
+import { useSkillStore } from '../../stores/skillStore'
+import { useModelStore } from '../../stores/modelStore'
 
 type ExecutionMode = 'compose' | 'plan' | 'build'
 type ReasoningVariant = 'default' | 'low' | 'medium' | 'high'
@@ -13,7 +15,6 @@ interface InputPrefs {
 
 export const INPUT_PREFS_KEY = 'mimocode.inputPrefs'
 const DEFAULT_MODEL = ''
-const FALLBACK_MODELS = ['anthropic/claude-sonnet-4-5', 'openai/gpt-5.1-codex', 'google/gemini-3-pro']
 
 export function readInputPrefs(): InputPrefs {
   if (typeof window === 'undefined') {
@@ -43,47 +44,78 @@ interface MessageInputProps {
   onOpenPlugins?: () => void
   onOpenWorkflow?: () => void
   onToggleStatus?: () => void
+  onClearSession?: () => void
 }
 
-export function MessageInput({ onSend, onCancel, disabled, isRunning, onNewSession, onSetMode, onOpenPlugins, onOpenWorkflow, onToggleStatus }: MessageInputProps) {
+export function MessageInput({ onSend, onCancel, disabled, isRunning, onSetMode, onClearSession }: MessageInputProps) {
   const [input, setInput] = useState('')
   const [prefs] = useState(readInputPrefs)
   const [model, setModel] = useState(prefs.model)
   const [permission, setPermission] = useState(prefs.permission)
   const [mode, setMode] = useState<ExecutionMode>(prefs.mode)
   const [reasoning, setReasoning] = useState<ReasoningVariant>(prefs.reasoning)
-  const [models, setModels] = useState<string[]>(() => prefs.model ? [prefs.model] : FALLBACK_MODELS)
   const [showSlashMenu, setShowSlashMenu] = useState(false)
   const [attachedFile, setAttachedFile] = useState<string | null>(null)
+  const skills = useSkillStore(state => state.skills)
+  const [compact, setCompact] = useState(false)
+  const toolbarRef = useRef<HTMLDivElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const { providers, loadProviders } = useModelStore()
+
+  // Load providers on mount
+  useEffect(() => {
+    loadProviders()
+  }, [loadProviders])
+
+  const modelGroups = providers
+    .filter(p => (p.isCli || p.isCustom) && p.models.length > 0)
+
+  useEffect(() => {
+    const el = toolbarRef.current?.closest('.input-bar') || toolbarRef.current?.parentElement
+    if (!el) return
+    const observer = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        setCompact(entry.contentRect.width < 520)
+      }
+    })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
 
   useEffect(() => {
     window.localStorage.setItem(INPUT_PREFS_KEY, JSON.stringify({ mode, permission, model, reasoning }))
   }, [mode, permission, model, reasoning])
 
   useEffect(() => {
-    let mounted = true
-    window.electronAPI?.listModels?.().then(result => {
-      if (!mounted || !result?.success || !result.models?.length) return
-      const uniqueModels = Array.from(new Set(result.models))
-      setModels(uniqueModels)
-      if (!model) setModel(uniqueModels[0] || DEFAULT_MODEL)
-    })
-    return () => { mounted = false }
-  }, [])
-
-  useEffect(() => {
     setShowSlashMenu(input.startsWith('/') && !input.includes(' '))
+  }, [input])
+
+  useLayoutEffect(() => {
+    const textarea = textareaRef.current
+    if (!textarea) return
+    textarea.style.height = 'auto'
+    const nextHeight = Math.min(textarea.scrollHeight, 180)
+    textarea.style.height = `${nextHeight}px`
+    textarea.style.overflowY = textarea.scrollHeight > 180 ? 'auto' : 'hidden'
   }, [input])
 
   const handleSlashCommand = (cmd: SlashCommand) => {
     setShowSlashMenu(false)
     setInput('')
+    // Handle skill commands
+    if (cmd.id.startsWith('skill:')) {
+      const skillName = cmd.id.replace('skill:', '')
+      onSend?.(`/${skillName}`, model, permission, reasoning, mode)
+      return
+    }
     switch (cmd.id) {
-      case 'new':
-        onNewSession?.()
+      case 'dream':
+        setMode('compose')
+        onSetMode?.('compose')
+        onSend?.('/dream', model, permission, reasoning, 'compose')
         break
-      case 'file':
-        handleAttachFile()
+      case 'distill':
+        onSend?.('/distill', model, permission, reasoning, mode)
         break
       case 'plan':
         setMode('plan')
@@ -93,14 +125,20 @@ export function MessageInput({ onSend, onCancel, disabled, isRunning, onNewSessi
         setMode('build')
         onSetMode?.('build')
         break
-      case 'plugins':
-        onOpenPlugins?.()
+      case 'commit':
+        onSend?.('/commit', model, permission, reasoning, mode)
         break
-      case 'workflow':
-        onOpenWorkflow?.()
+      case 'review':
+        onSend?.('/review', model, permission, reasoning, mode)
         break
-      case 'status':
-        onToggleStatus?.()
+      case 'test':
+        onSend?.('/test', model, permission, reasoning, mode)
+        break
+      case 'help':
+        onSend?.('/help', model, permission, reasoning, mode)
+        break
+      case 'clear':
+        onClearSession?.()
         break
     }
   }
@@ -117,6 +155,7 @@ export function MessageInput({ onSend, onCancel, disabled, isRunning, onNewSessi
 
   const handleSend = () => {
     if (input.trim() && !disabled && !isRunning) {
+      // CLI needs the mode prefix; mode is also passed separately for UI display
       let message = `---\nmode: ${mode}\n---\n\n${input.trim()}`
       if (attachedFile) {
         message = `---\nfile: ${attachedFile}\n---\n\n${message}`
@@ -142,6 +181,7 @@ export function MessageInput({ onSend, onCancel, disabled, isRunning, onNewSessi
           query={input}
           onSelect={handleSlashCommand}
           onClose={() => setShowSlashMenu(false)}
+          skills={skills}
         />
       )}
       {attachedFile && (
@@ -154,15 +194,16 @@ export function MessageInput({ onSend, onCancel, disabled, isRunning, onNewSessi
         </div>
       )}
       <textarea
+        ref={textareaRef}
         value={input}
         onChange={(e) => setInput(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder={isRunning ? 'AI 正在思考...' : '描述你的需求或输入 / 查看命令...'}
         disabled={disabled || isRunning}
         rows={1}
-        style={{ minHeight: 22 }}
+        style={{ minHeight: 22, maxHeight: 180 }}
       />
-      <div className="input-toolbar">
+      <div className={`input-toolbar${compact ? ' compact' : ''}`} ref={toolbarRef}>
         <div className="input-toolbar-left">
           <button className="attach-btn" title="添加附件" onClick={handleAttachFile}>
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -174,7 +215,7 @@ export function MessageInput({ onSend, onCancel, disabled, isRunning, onNewSessi
               onClick={() => { setMode('compose'); onSetMode?.('compose') }}
               title="Compose：整理想法与任务表达"
             >
-              Compose
+              {compact ? 'C' : 'Compose'}
             </button>
             <button
               type="button"
@@ -182,7 +223,7 @@ export function MessageInput({ onSend, onCancel, disabled, isRunning, onNewSessi
               onClick={() => { setMode('plan'); onSetMode?.('plan') }}
               title="Plan：先拆解计划，不直接改代码"
             >
-              Plan
+              {compact ? 'P' : 'Plan'}
             </button>
             <button
               type="button"
@@ -190,7 +231,7 @@ export function MessageInput({ onSend, onCancel, disabled, isRunning, onNewSessi
               onClick={() => { setMode('build'); onSetMode?.('build') }}
               title="Build：执行实现与验证"
             >
-              Build
+              {compact ? 'B' : 'Build'}
             </button>
           </div>
           <select
@@ -211,9 +252,17 @@ export function MessageInput({ onSend, onCancel, disabled, isRunning, onNewSessi
             onChange={(e) => setModel(e.target.value)}
             title="模型"
           >
-            <option value="">默认模型</option>
-            {models.map(item => (
-              <option value={item} key={item}>{formatModelName(item)}</option>
+            {compact ? (
+              <option value="">模型</option>
+            ) : (
+              <option value="">默认模型</option>
+            )}
+            {modelGroups.map(group => (
+              <optgroup key={group.id} label={group.label}>
+                {group.models.map(m => (
+                  <option key={m} value={m}>{formatModelName(m)}</option>
+                ))}
+              </optgroup>
             ))}
           </select>
           <select
@@ -243,5 +292,5 @@ export function MessageInput({ onSend, onCancel, disabled, isRunning, onNewSessi
 }
 
 function formatModelName(model: string) {
-  return model.replace(/^opencode\//, '').replace(/^mimo\//, '')
+  return model.replace(/^[^/]+\//, '')
 }

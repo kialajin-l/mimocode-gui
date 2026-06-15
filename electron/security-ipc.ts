@@ -4,6 +4,28 @@ import fs from 'fs'
 
 const LOGS_DIR = path.join(app.getPath('userData'), 'logs.json')
 
+// Authorized workspaces: set when users create/select project directories.
+// All cwd, git, terminal, read-file operations are restricted to these paths.
+const authorizedWorkspaces = new Set<string>()
+
+export function authorizeWorkspace(cwd: string): void {
+  try {
+    const resolved = fs.realpathSync(path.resolve(cwd))
+    authorizedWorkspaces.add(resolved)
+  } catch {
+    // If realpath fails, still add the resolved path as fallback
+    authorizedWorkspaces.add(path.resolve(cwd))
+  }
+}
+
+export function getAuthorizedWorkspaces(): string[] {
+  return Array.from(authorizedWorkspaces)
+}
+
+export function clearAuthorizedWorkspaces(): void {
+  authorizedWorkspaces.clear()
+}
+
 // --- Path Sanitization ---
 
 export function validateFilePath(file: string): { valid: boolean; error?: string } {
@@ -23,12 +45,27 @@ export function validateFilePath(file: string): { valid: boolean; error?: string
 }
 
 export function validateCwd(cwd: string | undefined): { valid: boolean; resolved: string; error?: string } {
-  const resolved = path.resolve(cwd || process.cwd())
-  const projectRoot = process.cwd()
-  if (!resolved.startsWith(projectRoot + path.sep) && resolved !== projectRoot) {
-    return { valid: false, resolved, error: 'Access denied: cwd outside project directory' }
+  const resolved = path.resolve(cwd || '.')
+  let realResolved: string
+  try {
+    realResolved = fs.realpathSync(resolved)
+  } catch {
+    realResolved = resolved
   }
-  return { valid: true, resolved }
+
+  // Check against all authorized workspaces
+  for (const workspace of authorizedWorkspaces) {
+    if (realResolved === workspace || realResolved.startsWith(workspace + path.sep)) {
+      return { valid: true, resolved: realResolved }
+    }
+  }
+
+  // Empty whitelist: reject instead of auto-authorization
+  if (authorizedWorkspaces.size === 0) {
+    return { valid: false, resolved: realResolved, error: 'No authorized workspace' }
+  }
+
+  return { valid: false, resolved: realResolved, error: 'Access denied: cwd outside authorized workspaces' }
 }
 
 export function isSensitiveFile(filePath: string): boolean {

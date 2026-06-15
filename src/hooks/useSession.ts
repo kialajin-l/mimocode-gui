@@ -13,7 +13,9 @@ export function useSession() {
   const addMessage = useSessionStore(s => s.addMessage)
   const updateSession = useSessionStore(s => s.updateSession)
   const createProject = useSessionStore(s => s.createProject)
+  const archiveProject = useSessionStore(s => s.archiveProject)
   const deleteProject = useSessionStore(s => s.deleteProject)
+  const archiveSession = useSessionStore(s => s.archiveSession)
 
   const activeSession = sessions.find((s) => s.id === activeSessionId)
   const activeSessionIdRef = useRef(activeSessionId)
@@ -22,17 +24,22 @@ export function useSession() {
   const sendMessage = useCallback(async (content: string, model?: string, permission?: string, reasoning?: string, mode?: string) => {
     let sessionId = activeSessionIdRef.current
     if (!sessionId) {
-      const sessionName = content.split('\n').find(line => line.trim() && !line.startsWith('Mode:') && !line.startsWith('Workflow:'))?.trim().slice(0, 40) || 'New Session'
+      const sessionName = content.split('\n').find(line => line.trim() && !line.startsWith('---'))?.trim().slice(0, 40) || 'New Session'
       const session = createSession(sessionName, '.')
       sessionId = session.id
       activeSessionIdRef.current = session.id
     }
 
+    // Extract mode from content prefix (e.g. "---\nmode: compose\n---")
+    const modeMatch = content.match(/^---\nmode:\s*(compose|plan|build)\n---/)
+    const msgMode: 'compose' | 'plan' | 'build' | undefined = modeMatch ? modeMatch[1] as 'compose' | 'plan' | 'build' : undefined
+
     const userMessage: Message = {
       id: crypto.randomUUID(),
       role: 'user',
       content,
-      timestamp: new Date()
+      timestamp: new Date(),
+      mode: msgMode
     }
 
     addMessage(sessionId, userMessage)
@@ -101,6 +108,7 @@ export function useSession() {
           content: '',
           timestamp: new Date(),
           parts: [],
+          mode: msgMode,
           ...updates
         })
       }
@@ -201,13 +209,22 @@ export function useSession() {
             .catch(e => console.error('[useSession] git diff error:', e))
         }
       } else {
+        const rawError = result?.error || '未返回内容'
+        let friendlyError = rawError
+        if (rawError.includes('ENOENT') || rawError.includes('找不到') || rawError.includes('not found')) {
+          friendlyError = '找不到 MiMo CLI 可执行文件。请确认已安装 MiMo CLI 并加入 PATH，或在设置中配置路径。'
+        } else if (rawError.includes('EACCES') || rawError.includes('Permission denied')) {
+          friendlyError = '权限不足，无法执行 MiMo CLI。请检查文件权限。'
+        } else if (rawError.includes('exited with code')) {
+          friendlyError = `MiMo CLI 执行出错：${rawError}`
+        }
         upsertAssistantDraft({
-          content: `MiMo 执行失败：${result?.error || '未返回内容'}`,
+          content: friendlyError,
           parts: [{
             id: crypto.randomUUID(),
             type: 'error',
             title: '执行失败',
-            content: result?.error || '未返回内容',
+            content: friendlyError,
             timestamp: new Date(),
             collapsed: false
           }]
@@ -256,6 +273,8 @@ export function useSession() {
     sendMessage,
     cancelMessage,
     createProject,
-    deleteProject
+    archiveProject,
+    deleteProject,
+    archiveSession
   }
 }

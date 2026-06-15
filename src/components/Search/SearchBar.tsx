@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback } from 'react'
+import { useRef, useEffect, useCallback, useState } from 'react'
 import { Session, Message } from '../../types/session'
 import { useSessionStore } from '../../stores/sessionStore'
 
@@ -12,6 +12,7 @@ interface SearchBarProps {
   query: string
   results: SearchResult[]
   onQueryChange: (query: string) => void
+  onNavigateToSession?: () => void
   onClose: () => void
 }
 
@@ -35,14 +36,25 @@ function truncate(text: string, maxLength: number): string {
   return text.slice(0, maxLength) + '...'
 }
 
-export function SearchBar({ query, results, onQueryChange, onClose }: SearchBarProps) {
+export function SearchBar({ query, results, onQueryChange, onNavigateToSession, onClose }: SearchBarProps) {
   const inputRef = useRef<HTMLInputElement>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
   const setActiveSession = useSessionStore(s => s.setActiveSession)
+  const [localQuery, setLocalQuery] = useState(query)
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout>>()
 
   useEffect(() => {
     inputRef.current?.focus()
   }, [])
+
+  useEffect(() => {
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current)
+    debounceTimerRef.current = setTimeout(() => {
+      onQueryChange(localQuery)
+    }, 150)
+    return () => {
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current)
+    }
+  }, [localQuery])
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -56,7 +68,7 @@ export function SearchBar({ query, results, onQueryChange, onClose }: SearchBarP
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      if (e.target instanceof Element && e.target.classList.contains('search-overlay')) {
         onClose()
       }
     }
@@ -66,11 +78,12 @@ export function SearchBar({ query, results, onQueryChange, onClose }: SearchBarP
 
   const handleResultClick = useCallback((result: SearchResult) => {
     setActiveSession(result.session.id)
+    onNavigateToSession?.()
     onClose()
-  }, [setActiveSession, onClose])
+  }, [setActiveSession, onNavigateToSession, onClose])
 
   return (
-    <div className="search-overlay" ref={containerRef}>
+    <div className="search-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
       <div className="search-bar">
         <div className="search-input-wrapper">
           <svg className="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -82,11 +95,11 @@ export function SearchBar({ query, results, onQueryChange, onClose }: SearchBarP
             className="search-input"
             type="text"
             placeholder="搜索会话和消息... (Ctrl+K)"
-            value={query}
-            onChange={(e) => onQueryChange(e.target.value)}
+            value={localQuery}
+            onChange={(e) => setLocalQuery(e.target.value)}
           />
-          {query && (
-            <button className="search-clear" onClick={() => onQueryChange('')}>
+          {localQuery && (
+            <button className="search-clear" onClick={() => { setLocalQuery(''); onQueryChange('') }}>
               ×
             </button>
           )}
@@ -107,7 +120,7 @@ export function SearchBar({ query, results, onQueryChange, onClose }: SearchBarP
                       </svg>
                     </div>
                     <div className="search-result-content">
-                      <div className="search-result-title" dangerouslySetInnerHTML={{ __html: highlightMatch(result.session.name, query) }} />
+                      <div className="search-result-title" dangerouslySetInnerHTML={{ __html: highlightMatch(result.session.name, localQuery) }} />
                       <div className="search-result-meta">
                         {result.session.messages.length} 条消息
                       </div>
@@ -142,7 +155,7 @@ export function SearchBar({ query, results, onQueryChange, onClose }: SearchBarP
             )}
           </div>
         )}
-        {query && results.length === 0 && (
+        {localQuery && results.length === 0 && (
           <div className="search-empty">
             未找到匹配结果
           </div>

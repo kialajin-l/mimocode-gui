@@ -6,11 +6,12 @@ interface SessionItemProps {
   isActive: boolean
   onSelect: () => void
   onDelete: () => void
+  onArchive: () => void
   onRename: (id: string, name: string) => void
   onOpenInNewWindow?: (id: string) => void
 }
 
-export function SessionItem({ session, isActive, onSelect, onDelete, onRename, onOpenInNewWindow }: SessionItemProps) {
+export function SessionItem({ session, isActive, onSelect, onDelete, onArchive, onRename, onOpenInNewWindow }: SessionItemProps) {
   const [editing, setEditing] = useState(false)
   const [editValue, setEditValue] = useState(session.name)
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null)
@@ -81,6 +82,20 @@ export function SessionItem({ session, isActive, onSelect, onDelete, onRename, o
           <span className="session-title">{session.name}</span>
         )}
         <button
+          className="session-archive-btn"
+          onClick={(e) => {
+            e.stopPropagation()
+            onArchive()
+          }}
+          title="归档会话"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="21 8 21 21 3 21 3 8" />
+            <rect x="1" y="3" width="22" height="5" />
+            <line x1="10" y1="12" x2="14" y2="12" />
+          </svg>
+        </button>
+        <button
           className="session-delete-btn"
           onClick={(e) => {
             e.stopPropagation()
@@ -121,6 +136,15 @@ export function SessionItem({ session, isActive, onSelect, onDelete, onRename, o
               在新窗口打开
             </button>
           )}
+          <button
+            className="context-menu-item"
+            onClick={() => {
+              setContextMenu(null)
+              onArchive()
+            }}
+          >
+            归档
+          </button>
           <div className="context-menu-separator" />
           <button
             className="context-menu-item danger"

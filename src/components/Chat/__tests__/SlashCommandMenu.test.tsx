@@ -9,26 +9,28 @@ function renderMenu(query: string, onSelect = vi.fn(), onClose = vi.fn()) {
 describe('SlashCommandMenu', () => {
   it('renders all commands when query is just "/"', () => {
     renderMenu('/')
-    expect(screen.getByText('/new')).toBeDefined()
-    expect(screen.getByText('/file')).toBeDefined()
+    expect(screen.getByText('/dream')).toBeDefined()
+    expect(screen.getByText('/distill')).toBeDefined()
     expect(screen.getByText('/plan')).toBeDefined()
     expect(screen.getByText('/build')).toBeDefined()
-    expect(screen.getByText('/plugins')).toBeDefined()
-    expect(screen.getByText('/workflow')).toBeDefined()
-    expect(screen.getByText('/status')).toBeDefined()
+    expect(screen.getByText('/commit')).toBeDefined()
+    expect(screen.getByText('/review')).toBeDefined()
+    expect(screen.getByText('/test')).toBeDefined()
+    expect(screen.getByText('/help')).toBeDefined()
+    expect(screen.getByText('/clear')).toBeDefined()
   })
 
   it('filters commands by id match', () => {
     renderMenu('/plan')
     expect(screen.getByText('/plan')).toBeDefined()
-    expect(screen.queryByText('/new')).toBeNull()
+    expect(screen.queryByText('/commit')).toBeNull()
     expect(screen.queryByText('/build')).toBeNull()
   })
 
   it('filters commands by description match', () => {
-    renderMenu('/插件')
-    expect(screen.getByText('/plugins')).toBeDefined()
-    expect(screen.queryByText('/new')).toBeNull()
+    renderMenu('/审查')
+    expect(screen.getByText('/review')).toBeDefined()
+    expect(screen.queryByText('/commit')).toBeNull()
   })
 
   it('calls onClose when no commands match', () => {
@@ -40,9 +42,9 @@ describe('SlashCommandMenu', () => {
   it('calls onSelect when clicking a command', () => {
     const onSelect = vi.fn()
     renderMenu('/', onSelect)
-    fireEvent.click(screen.getByText('/new').closest('.slash-command-item')!)
+    fireEvent.click(screen.getByText('/commit').closest('.slash-command-item')!)
     expect(onSelect).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'new', label: '/new' })
+      expect.objectContaining({ id: 'commit', label: '/commit' })
     )
   })
 
@@ -52,7 +54,7 @@ describe('SlashCommandMenu', () => {
     fireEvent.keyDown(window, { key: 'ArrowDown' })
     fireEvent.keyDown(window, { key: 'Enter' })
     expect(onSelect).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'file' })
+      expect.objectContaining({ id: 'distill' })
     )
   })
 
@@ -61,8 +63,9 @@ describe('SlashCommandMenu', () => {
     renderMenu('/', onSelect)
     fireEvent.keyDown(window, { key: 'ArrowUp' })
     fireEvent.keyDown(window, { key: 'Enter' })
+    // ArrowUp wraps to last item = /clear
     expect(onSelect).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'status' })
+      expect.objectContaining({ id: 'clear' })
     )
   })
 
@@ -78,7 +81,7 @@ describe('SlashCommandMenu', () => {
     renderMenu('/', onSelect)
     fireEvent.keyDown(window, { key: 'Tab' })
     expect(onSelect).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'new' })
+      expect.objectContaining({ id: 'dream' })
     )
   })
 

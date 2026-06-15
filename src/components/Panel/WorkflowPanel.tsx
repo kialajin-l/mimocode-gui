@@ -2,9 +2,10 @@ import { useWorkflowStore } from '../../stores/workflowStore'
 
 interface WorkflowPanelProps {
   onSendMessage: (message: string) => void
+  onClose?: () => void
 }
 
-export function WorkflowPanel({ onSendMessage }: WorkflowPanelProps) {
+export function WorkflowPanel({ onSendMessage, onClose }: WorkflowPanelProps) {
   const {
     workflows,
     currentStepIndex,
@@ -27,11 +28,20 @@ export function WorkflowPanel({ onSendMessage }: WorkflowPanelProps) {
         <div className="workflow-active">
           <div className="workflow-active-header">
             <h3>{activeWorkflow.name}</h3>
-            <button className="workflow-stop-btn" onClick={stopWorkflow} title="停止工作流">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-              </svg>
-            </button>
+            <div style={{ display: 'flex', gap: 6 }}>
+              {onClose && (
+                <button className="workflow-close-btn" onClick={onClose} title="返回工作台 (Esc)">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+              )}
+              <button className="workflow-stop-btn" onClick={stopWorkflow} title="停止工作流">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
           </div>
 
           <div className="workflow-progress-bar">
@@ -89,6 +99,16 @@ export function WorkflowPanel({ onSendMessage }: WorkflowPanelProps) {
   return (
     <div className="workflow-panel">
       <div className="workflow-list">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <h3>自动化工作流</h3>
+          {onClose && (
+            <button className="workflow-close-btn" onClick={onClose} title="返回工作台 (Esc)" style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 8px', cursor: 'pointer', color: 'var(--text-secondary)' }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          )}
+        </div>
         {workflows.map(workflow => (
           <div key={workflow.id} className="workflow-card">
             <div className="workflow-card-header">

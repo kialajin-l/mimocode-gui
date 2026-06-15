@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Message, MessagePart } from '../../types/session'
@@ -16,83 +16,155 @@ interface MessageListProps {
 
 export function MessageList({ messages, sessionId, isRunning }: MessageListProps) {
   const toggleBookmark = useSessionStore(s => s.toggleMessageBookmark)
-  const lastAssistantMessageId = [...messages].reverse().find(message => message.role === 'assistant')?.id
+  const containerRef = useRef<HTMLDivElement>(null)
+  const bottomRef = useRef<HTMLDivElement>(null)
+  const [autoFollow, setAutoFollow] = useState(true)
+  const [showScrollToBottom, setShowScrollToBottom] = useState(false)
+  const lastMessage = messages[messages.length - 1]
+  const lastMessageContent = lastMessage?.content ?? ''
+
+  // Tail traversal to find last assistant message id (avoids reverse().find() allocation)
+  let lastAssistantMessageId: string | undefined
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i].role === 'assistant') {
+      lastAssistantMessageId = messages[i].id
+      break
+    }
+  }
+
+  const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
+    bottomRef.current?.scrollIntoView({ block: 'end', behavior })
+  }
+
+  useEffect(() => {
+    const scrollContainer = containerRef.current?.closest('.chat-area')
+    if (!(scrollContainer instanceof HTMLElement)) return
+
+    const handleScroll = () => {
+      const nearBottom = isNearBottom(scrollContainer)
+      setAutoFollow(nearBottom)
+      setShowScrollToBottom(!nearBottom)
+    }
+
+    scrollContainer.addEventListener('scroll', handleScroll)
+    handleScroll()
+
+    return () => scrollContainer.removeEventListener('scroll', handleScroll)
+  }, [sessionId])
+
+  useEffect(() => {
+    setAutoFollow(true)
+    setShowScrollToBottom(false)
+    window.setTimeout(() => scrollToBottom('auto'), 0)
+  }, [sessionId])
+
+  useEffect(() => {
+    if (!autoFollow) return
+    window.setTimeout(() => scrollToBottom(isRunning ? 'auto' : 'smooth'), 0)
+  }, [messages.length, lastMessageContent, isRunning, autoFollow])
 
   if (messages.length === 0) {
     return <EmptySessionBackdrop />
   }
 
   return (
-    <div className="message-list">
-      {messages.map((message) => {
-        const display = parseMessageDisplay(message.content)
-        return (
-          <div key={message.id} className={`message message-${message.role}`}>
-            <div className="message-avatar">
-              {message.role === 'user' ? '👤' : '🤖'}
-            </div>
-            <div className="message-stack">
-              <div className="message-content">
-                <div className="message-header">
-                  <span className="message-role">
-                    {message.role === 'user' ? '你' : 'MiMoCode'}
-                  </span>
-                  <span className="message-time">
-                    {message.timestamp.toLocaleTimeString()}
-                  </span>
-                  <div className="message-actions">
-                    <CopyButton content={message.content} />
-                    {sessionId && (
-                      <BookmarkButton
-                        bookmarked={message.bookmarked || false}
-                        onToggle={() => toggleBookmark(sessionId, message.id)}
-                      />
-                    )}
-                  </div>
-                </div>
-                {display.badges.length > 0 && (
-                  <div className="message-badges">
-                    {display.badges.map(badge => <span key={badge}>{badge}</span>)}
-                  </div>
-                )}
-                {message.role === 'assistant' && message.parts && message.parts.length > 0 && (
-                  <ExecutionTrace
-                    parts={message.parts}
-                    collapsedByDefault={Boolean(display.content.trim()) && message.parts.every(part => part.collapsed)}
-                  />
-                )}
-                <div className="message-text">
-                  <Markdown
-                    remarkPlugins={[remarkGfm]}
-                    components={{
-                      code({ className, children, ...props }) {
-                        const match = /language-(\w+)/.exec(className || '')
-                        const isInline = !match && !String(children).includes('\n')
-                        if (isInline) {
-                          return <code className={className} {...props}>{children}</code>
-                        }
-                        return (
-                          <CodeBlock
-                            code={String(children).replace(/\n$/, '')}
-                            language={match?.[1]}
-                          />
-                        )
-                      }
-                    }}
-                  >
-                    {display.content}
-                  </Markdown>
-                </div>
+    <div className="message-list-container" ref={containerRef}>
+      <div className="message-list">
+        {messages.map((message) => {
+          const display = parseMessageDisplay(message.content)
+          // Use message.mode for badge display (more reliable than parsing content)
+          const displayMode = message.mode || display.mode
+          return (
+            <div key={message.id} className={`message message-${message.role}`} data-mode={displayMode || undefined}>
+              <div className="message-avatar">
+                {message.role === 'user' ? '👤' : '🤖'}
               </div>
-              {isRunning && message.id === lastAssistantMessageId && (
-                <ThinkingStatus />
-              )}
+              <div className="message-stack">
+                <div className="message-content">
+                  <div className="message-header">
+                    {message.mode && (
+                      <span className={`mode-badge mode-${message.mode}`}>{message.mode}</span>
+                    )}
+                    <span className="message-role">
+                      {message.role === 'user' ? '你' : 'MiMoCode'}
+                    </span>
+                    <span className="message-time">
+                      {message.timestamp.toLocaleTimeString()}
+                    </span>
+                    <div className="message-actions">
+                      <CopyButton content={message.content} />
+                      {sessionId && (
+                        <BookmarkButton
+                          bookmarked={message.bookmarked || false}
+                          onToggle={() => toggleBookmark(sessionId, message.id)}
+                        />
+                      )}
+                    </div>
+                  </div>
+                  {display.badges.length > 0 && (
+                    <div className="message-badges">
+                      {display.badges.map(badge => <span key={badge} className={`mode-badge mode-${badge.toLowerCase()}`}>{badge}</span>)}
+                    </div>
+                  )}
+                  {message.role === 'assistant' && message.parts && message.parts.length > 0 && (
+                    <ExecutionTrace
+                      parts={message.parts}
+                      collapsedByDefault={Boolean(display.content.trim()) && message.parts.every(part => part.collapsed)}
+                    />
+                  )}
+                  <div className="message-text">
+                    <Markdown
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        code({ className, children, ...props }) {
+                          const match = /language-(\w+)/.exec(className || '')
+                          const isInline = !match && !String(children).includes('\n')
+                          if (isInline) {
+                            return <code className={className} {...props}>{children}</code>
+                          }
+                          return (
+                            <CodeBlock
+                              code={String(children).replace(/\n$/, '')}
+                              language={match?.[1]}
+                            />
+                          )
+                        }
+                      }}
+                    >
+                      {display.content}
+                    </Markdown>
+                  </div>
+                </div>
+                {isRunning && message.id === lastAssistantMessageId && (
+                  <ThinkingStatus />
+                )}
+              </div>
             </div>
-          </div>
-        )
-      })}
+          )
+        })}
+        <div ref={bottomRef} />
+      </div>
+      {showScrollToBottom && (
+        <button
+          type="button"
+          className="scroll-to-bottom-button"
+          aria-label="回到最新消息"
+          title="回到最新消息"
+          onClick={() => {
+            setAutoFollow(true)
+            setShowScrollToBottom(false)
+            scrollToBottom()
+          }}
+        >
+          ↓
+        </button>
+      )}
     </div>
   )
+}
+
+function isNearBottom(element: HTMLElement, threshold = 120) {
+  return element.scrollHeight - element.scrollTop - element.clientHeight <= threshold
 }
 
 function ExecutionTrace({ parts, collapsedByDefault }: { parts: MessagePart[]; collapsedByDefault: boolean }) {
@@ -231,10 +303,24 @@ function parseMessageDisplay(content: string) {
   const lines = content.split('\n')
   const badges: string[] = []
   const bodyLines = [...lines]
+  let mode: string | null = null
 
+  // New format: ---\nmode: <mode>\n---
+  const modeMatch = content.match(/^---\nmode:\s*(compose|plan|build)\n---/)
+  if (modeMatch) {
+    mode = modeMatch[1]
+    badges.push(mode)
+    const afterMode = content.slice(modeMatch[0].length).replace(/^\n+/, '')
+    return { content: afterMode, badges, mode }
+  }
+
+  // Legacy format: Mode: Compose.
   if (bodyLines[0]?.startsWith('Mode:')) {
-    const mode = bodyLines.shift()?.replace('Mode:', '').replace('.', '').trim()
-    if (mode) badges.push(mode)
+    const modeStr = bodyLines.shift()?.replace('Mode:', '').replace('.', '').trim()
+    if (modeStr) {
+      mode = modeStr.toLowerCase()
+      badges.push(modeStr)
+    }
   }
 
   if (bodyLines[0]?.startsWith('Workflow:')) {
@@ -244,5 +330,5 @@ function parseMessageDisplay(content: string) {
 
   while (bodyLines[0] === '') bodyLines.shift()
 
-  return { content: bodyLines.join('\n'), badges }
+  return { content: bodyLines.join('\n'), badges, mode }
 }
